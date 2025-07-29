@@ -22,9 +22,7 @@ The **MED3pa** package is specifically designed to address critical challenges i
 
 ## Key Functionalities
 
-- **Covariate Shift Detection**: Utilizing the Detectron subpackage, MED3pa can identify significant shifts in data distributions that might affect the model’s predictions. This feature is crucial for applications such as healthcare, where early detection of shifts can prevent erroneous decisions.
-
-- **Uncertainty and Confidence Estimation**: Through the med3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
+- **Uncertainty and Confidence Estimation**: Through the MED3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
 - **Identification of Problematic Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
 

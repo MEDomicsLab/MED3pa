@@ -4,16 +4,15 @@ Additionally, it includes Aggregated Predictive Confidence (APC) models that pre
 similar data points, and Mixed Predictive Confidence (MPC) models that combine the predictions from IPC and APC
 models.
 """
-import json
-from typing import Any, Dict, List, Optional
-import pickle
 
+import json
 import numpy as np
 import pandas as pd
-
+import pickle
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
+from typing import Any, Dict, List, Optional
 
 from MED3pa.med3pa.tree import TreeRepresentation
 from MED3pa.models.concrete_regressors import (DecisionTreeRegressorModel, RandomForestRegressorModel,

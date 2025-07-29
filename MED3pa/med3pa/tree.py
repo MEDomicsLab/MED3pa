@@ -5,13 +5,12 @@ This module is crucial for profiling aggregated data and extracting valuable ins
 """
 
 import json
+import numpy as np
+from pandas import DataFrame, Series
 from typing import Union, Any, Dict, List
 
-from pandas import DataFrame, Series
-import numpy as np
-
 from MED3pa.models.concrete_regressors import DecisionTreeRegressorModel
-from .profiles import Profile
+from MED3pa.med3pa.profiles import Profile
 
 
 def to_serializable(obj: Any, additional_arg: Any = None) -> Any:

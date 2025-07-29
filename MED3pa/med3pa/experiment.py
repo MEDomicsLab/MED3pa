@@ -1,22 +1,16 @@
 """
 Orchestrates the execution of the med3pa method and integrates the functionality of other modules to run comprehensive experiments. 
-It includes classes to manage and store results ``Med3paResults``, execute experiments like ``Med3paExperiment`` and ``Med3paDetectronExperiment``, and integrate results from the Detectron method ``Med3paDetectronResults``
+It includes ``Med3paExperiment`` to manage experiments.
 """
-# import json
-import os
-import matplotlib.pyplot as plt
-from typing import Any, Dict, List, Tuple, Type, Union
 
-# import numpy as np
 from checkpointer import checkpoint
 from sklearn.model_selection import train_test_split
+from typing import Tuple
 
 from MED3pa.datasets import DatasetsManager
-from MED3pa.detectron.experiment import DetectronExperiment, DetectronResult, DetectronStrategy, \
-    EnhancedDisagreementStrategy
 from MED3pa.med3pa.mdr import MDRCalculator
 from MED3pa.med3pa.models import APCModel, IPCModel, MPCModel
-from MED3pa.med3pa.profiles import Profile, ProfilesManager
+from MED3pa.med3pa.profiles import ProfilesManager
 from MED3pa.med3pa.results import Med3paResults, Med3paRecord
 from MED3pa.med3pa.uncertainty import *
 from MED3pa.models.base import BaseModelManager
@@ -209,7 +203,7 @@ class Med3paExperiment:
                     med3pa_metrics: List[str] = None,
                     evaluate_models: bool = False,
                     mode: str = 'mpc',
-                    models_metrics: List[str] = None) -> Tuple[Med3paRecord, dict, dict]:
+                    models_metrics: List[str] = None) -> Tuple[Med3paRecord, IPCModel, APCModel]:
 
         """
         Orchestrates the MED3PA experiment on one specific set of the dataset.
@@ -237,6 +231,8 @@ class Med3paExperiment:
 
         Returns:
             Med3paRecord: the results of the MED3PA experiment.
+            IPCModel: The IPC model.
+            APCModel: The APC model.
         """
 
         # Step 1 : datasets and base model setting
@@ -412,177 +408,3 @@ class Med3paExperiment:
                 results.set_models_evaluation(IPC_evaluation, None)
 
         return results, ipc_config, apc_config
-
-
-class Med3paDetectronExperiment:
-    @staticmethod
-    @checkpoint(root_path="checkpoints", verbosity=False)
-    def run(datasets: DatasetsManager,
-            base_model_manager: BaseModelManager,
-            uncertainty_metric: str = 'absolute_error',
-            training_params: Dict = None,
-            samples_size: int = 20,
-            samples_size_profiles: int = 10,
-            ensemble_size: int = 10,
-            num_calibration_runs: int = 100,
-            patience: int = 3,
-            test_strategies: Union[str, List[str]] = "enhanced_disagreement_strategy",
-            allow_margin: bool = False,
-            margin: float = 0.05,
-            ipc_type: str = 'RandomForestRegressor',
-            ipc_params: Dict = None,
-            ipc_grid_params: Dict = None,
-            ipc_cv: int = None,
-            pretrained_ipc: str = None,
-            apc_params: Dict = None,
-            apc_grid_params: Dict = None,
-            apc_cv: int = None,
-            pretrained_apc: str = None,
-            samples_ratio_min: int = 0,
-            samples_ratio_max: int = 50,
-            samples_ratio_step: int = 5,
-            med3pa_metrics: List[str] = ['Accuracy', 'BalancedAccuracy', 'Precision', 'Recall', 'F1Score',
-                                         'Specificity', 'Sensitivity', 'Auc', 'LogLoss', 'Auprc', 'NPV', 'PPV', 'MCC'],
-            evaluate_models: bool = False,
-            use_ref_models: bool = False,
-            models_metrics: List[str] = ['MSE', 'RMSE', 'MAE'],
-            mode: str = 'mpc',
-            all_dr: bool = False,
-            prev_med3pa_results=None) -> Med3paResults:
-        """Runs the MED3PA and Detectron experiment.
-        Args:
-            datasets (DatasetsManager): The datasets manager instance.
-            training_params (dict): Parameters for training the models.
-            base_model_manager (BaseModelManager): The base model manager instance.
-            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty, by default absolute_error.
-            samples_size (int, optional): Sample size for the Detectron experiment, by default 20.
-            samples_size_profiles (int, optional): Sample size for Profiles Detectron experiment, by default 10.
-            ensemble_size (int, optional): Number of models in the ensemble, by default 10.
-            num_calibration_runs (int, optional): Number of calibration runs, by default 100.
-            patience (int, optional): Patience for early stopping, by default 3.
-            test_strategies (Union[str, List[str]): strategies for testing disagreement, by default enhanced_disagreement_strategies.
-            allow_margin (bool, optional): Whether to allow a margin in the test, by default False.
-            margin (float, optional): Margin value for the test, by default 0.05.
-            ipc_type (str, optional): The regressor model to use for IPC, by default RandomForestRegressor.
-            ipc_params (dict, optional): Parameters for initializing the IPC regressor model, by default None.
-            ipc_grid_params (dict, optional): Grid search parameters for optimizing the IPC model, by default None.
-            ipc_cv (int, optional): Number of cross-validation folds for optimizing the IPC model, by default None.
-            pretrained_ipc (str, optional): path to a pretrained ipc, by default None.
-            apc_params (dict, optional): Parameters for initializing the APC regressor model, by default None.
-            apc_grid_params (dict, optional): Grid search parameters for optimizing the APC model, by default None.
-            pretrained_apc (str, optional): path to a pretrained apc, by default None.
-            apc_cv (int, optional): Number of cross-validation folds for optimizing the APC model, by default None.
-            samples_ratio_min (int, optional): Minimum sample ratio, by default 0.
-            samples_ratio_max (int, optional): Maximum sample ratio, by default 50.
-            samples_ratio_step (int, optional): Step size for sample ratio, by default 5.
-            med3pa_metrics (list of str, optional): List of metrics to calculate, by default ['Auc', 'Accuracy', 'BalancedAccuracy'].
-            evaluate_models (bool, optional): Whether to evaluate the models, by default False.
-            models_metrics (list of str, optional): List of metrics for model evaluation, by default ['MSE', 'RMSE'].
-            all_dr (bool, optional): Whether to run for all declaration rates, by default False.
-        Returns:
-            Med3paResults: Results of MED3pa on reference and testing sets, plus Detectron Results.
-        """
-
-        valid_modes = ['mpc', 'apc']
-
-        if mode not in valid_modes:
-            raise ValueError(f"Invalid mode '{mode}'. The mode must be one of {valid_modes}.")
-
-        if prev_med3pa_results is not None:
-            print("Using previous med3pa_results to execute Med3paDetectron experiment")
-            med3pa_results = prev_med3pa_results
-
-        else:
-            med3pa_results = Med3paExperiment.run(datasets_manager=datasets,
-                                                  base_model_manager=base_model_manager,
-                                                  uncertainty_metric=uncertainty_metric,
-                                                  ipc_params=ipc_params, ipc_grid_params=ipc_grid_params, ipc_cv=ipc_cv,
-                                                  ipc_type=ipc_type, pretrained_ipc=pretrained_ipc,
-                                                  apc_params=apc_params, apc_grid_params=apc_grid_params, apc_cv=apc_cv,
-                                                  pretrained_apc=pretrained_apc,
-                                                  evaluate_models=evaluate_models, models_metrics=models_metrics,
-                                                  samples_ratio_min=samples_ratio_min,
-                                                  samples_ratio_max=samples_ratio_max,
-                                                  samples_ratio_step=samples_ratio_step,
-                                                  med3pa_metrics=med3pa_metrics, mode=mode,
-                                                  use_ref_models=use_ref_models)
-
-        # print("Running Global Detectron Experiment:")
-        # detectron_results = DetectronExperiment.run(datasets=datasets, training_params=training_params,
-        #                                             base_model_manager=base_model_manager,
-        #                                             samples_size=samples_size,
-        #                                             num_calibration_runs=num_calibration_runs,
-        #                                             ensemble_size=ensemble_size,
-        #                                             patience=patience, allow_margin=allow_margin, margin=margin)
-        # detectron_results.analyze_results(test_strategies)
-
-        # if med3pa_results.test_record.get_confidence_scores("mpc") is not None:
-        #     confidence_scores = med3pa_results.test_record.get_confidence_scores("mpc")
-        # elif med3pa_results.test_record.get_confidence_scores("apc") is not None:
-        #     confidence_scores = med3pa_results.test_record.get_confidence_scores("apc")
-        # else:
-        #     raise ValueError("the confidence scores were not calculated!")
-        if mode == "mpc":
-            confidence_scores = med3pa_results.test_record.get_confidence_scores("mpc")
-        elif mode == "apc":
-            confidence_scores = med3pa_results.test_record.get_confidence_scores("apc")
-        else:
-            raise ValueError("the confidence scores were not calculated!")
-
-        print("Running Profiled Detectron Experiment:")
-        detectron_results, detectron_profiles_res = MDRCalculator.detectron_by_profiles(datasets=datasets,
-                                                                                        profiles_manager=med3pa_results.test_record.get_profiles_manager(),
-                                                                                        training_params=training_params,
-                                                                                        base_model_manager=base_model_manager,
-                                                                                        confidence_scores=confidence_scores,
-                                                                                        samples_size=samples_size_profiles,
-                                                                                        num_calibration_runs=num_calibration_runs,
-                                                                                        ensemble_size=ensemble_size,
-                                                                                        patience=patience,
-                                                                                        strategies=test_strategies,
-                                                                                        allow_margin=allow_margin,
-                                                                                        margin=margin,
-                                                                                        all_dr=all_dr)
-        if detectron_results is None:
-            detectron_results = DetectronExperiment.run(datasets=datasets, training_params=training_params,
-                                                        base_model_manager=base_model_manager,
-                                                        samples_size=samples_size,
-                                                        num_calibration_runs=num_calibration_runs,
-                                                        ensemble_size=ensemble_size,
-                                                        patience=patience, allow_margin=allow_margin, margin=margin)
-        detectron_results.analyze_results(test_strategies)
-
-        med3pa_params = {
-            'uncertainty_metric': uncertainty_metric,
-            'samples_ratio_min': samples_ratio_min,
-            'samples_ratio_max': samples_ratio_max,
-            'samples_ratio_step': samples_ratio_step,
-            'med3pa_metrics': med3pa_metrics,
-            'evaluate_models': evaluate_models,
-            'models_evaluation_metrics': models_metrics,
-            'mode': mode,
-
-        }
-
-        detectron_params = {
-            'samples_size': samples_size,
-            'profiles_samples_size': samples_size_profiles,
-            'cdcs_ensemble_size': ensemble_size,
-            'num_runs': num_calibration_runs,
-            'patience': patience,
-            'allow_margin': allow_margin,
-            'margin': margin,
-            'additional_training_params': training_params,
-        }
-        experiment_config = {
-            'experiment_name': "Med3paDetectronExperiment",
-            'med3pa_detectron_params': {},
-        }
-
-        experiment_config['med3pa_detectron_params']['detectron_params'] = detectron_params
-        experiment_config['med3pa_detectron_params']['med3pa_params'] = med3pa_params
-
-        med3pa_results.set_detectron_results(detectron_results)
-        med3pa_results.set_experiment_config(experiment_config)
-
-        return med3pa_results

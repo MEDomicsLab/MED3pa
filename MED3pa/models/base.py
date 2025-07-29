@@ -1,7 +1,8 @@
 """This module introduces a singleton manager that manages the instantiation and cloning of a base model,
-which is particularly useful for applications like ``med3pa`` and ``Detectron`` where a consistent reference model is
+which is particularly useful for applications like ``med3pa`` where a consistent reference model is
 necessary. It employs the **Singleton and Prototype** design patterns to ensure that the base model is instantiated
 once and can be cloned without reinitialization."""
+
 import pickle
 from io import BytesIO
 from typing import Any, Dict, Optional

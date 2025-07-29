@@ -3,15 +3,13 @@ This module offers concrete implementations of specific classification models, s
 It adapts the abstract interfaces defined in ``abstract_models.py`` to provide fully functional models ready for training and prediction.
 """
 
-from typing import Any, Dict, List, Optional, Union
-
 import numpy as np
 import xgboost as xgb
+from typing import Any, Dict, Optional, Union
 
-from .abstract_models import ClassificationModel
-from .classification_metrics import *
-from .data_strategies import ToDmatrixStrategy
-from .xgboost_params import valid_xgboost_custom_params, valid_xgboost_params, xgboost_metrics
+from MED3pa.models.abstract_models import ClassificationModel
+from MED3pa.models.data_strategies import ToDmatrixStrategy
+from MED3pa.models.xgboost_params import valid_xgboost_custom_params, valid_xgboost_params
 
 
 class XGBoostModel(ClassificationModel):
@@ -170,8 +168,7 @@ class XGBoostModel(ClassificationModel):
 
         return preds
 
-    def train_to_disagree(self, x_train: np.ndarray, y_train: np.ndarray, 
-                          # x_validation: np.ndarray, y_validation: np.ndarray,
+    def train_to_disagree(self, x_train: np.ndarray, y_train: np.ndarray,
                           x_test: np.ndarray, y_test: np.ndarray, 
                           training_parameters: Optional[Dict[str, Any]], 
                           balance_train_classes: bool, N: int) -> None:

@@ -2,13 +2,13 @@
 The ``classification_metrics.py`` module defines the ``ClassificationEvaluationMetrics`` class, 
 that contains various classification metrics that can be used to assess the model's performance. 
 """
-from collections.abc import Callable
-from typing import List, Optional
 
 import numpy as np
 import warnings
+from collections.abc import Callable
 from sklearn.metrics import (accuracy_score, average_precision_score, f1_score, log_loss, matthews_corrcoef,
                              precision_score, recall_score, roc_auc_score)
+from typing import List, Optional
 
 from .abstract_metrics import EvaluationMetric
 

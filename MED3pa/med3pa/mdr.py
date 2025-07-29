@@ -1,23 +1,15 @@
-"""Contains functionality for calculating metrics based on the predicted confidence and declaration rates (MDR). The
+"""
+Contains functionality for calculating metrics based on the predicted confidence and declaration rates (MDR). The
 ``MDRCalculator`` class offers methods to assess model performance across different declaration rates,
 and to extract problematic profiles under specific declaration rates."""
-from typing import Dict, Type, Union, Any
-import copy
-import numpy as np
-import ray
-from ray.experimental import tqdm_ray
-from checkpointer import Checkpointer
 
-from MED3pa.datasets import DatasetsManager, MaskedDataset
-from MED3pa.detectron import DetectronExperiment, DetectronStrategy
-from MED3pa.med3pa.profiles import Profile, ProfilesManager
+import numpy as np
+from typing import Dict
+
+from MED3pa.datasets import MaskedDataset
+from MED3pa.med3pa.profiles import ProfilesManager
 from MED3pa.med3pa.tree import TreeRepresentation
-from MED3pa.models import BaseModelManager
 from MED3pa.models.classification_metrics import *
-from MED3pa.ray_checkpointing.path_provider import PathProvider
-from MED3pa.ray_checkpointing.server import Server
-from MED3pa.ray_checkpointing.storage import get_storage
-from MED3pa.ray_checkpointing.utils import wait_for_pending_tasks
 
 
 class MDRCalculator:
@@ -31,7 +23,7 @@ class MDRCalculator:
         Calculates the minimum confidence score based on the desired declaration rate.
 
         Args:
-            dr (int): Desired declaratation rate as a percentage (0-100).
+            dr (int): Desired declaration rate as a percentage (0-100).
             confidence_scores (np.ndarray): Array of confidence scores.
 
         Returns:
@@ -379,225 +371,3 @@ class MDRCalculator:
                     # update the calculated metrics in the profile
                     profile.update_metrics_results(metrics_dict)
                     profile.update_node_information(info_dict)
-
-    @staticmethod
-    def detectron_by_profiles(datasets: DatasetsManager,
-                              profiles_manager: ProfilesManager,
-                              confidence_scores: np.ndarray,
-                              training_params: Dict,
-                              base_model_manager: BaseModelManager,
-                              strategies: Union[Type[DetectronStrategy], List[Type[DetectronStrategy]]],
-                              samples_size: int = 20,
-                              ensemble_size: int = 10,
-                              num_calibration_runs: int = 100,
-                              patience: int = 3,
-                              allow_margin: bool = False,
-                              margin: float = 0.05,
-                              all_dr: bool = False) -> Union[Any, Dict]:
-
-        """Runs the Detectron method on the different testing set profiles.
-
-        Args:
-            datasets (DatasetsManager): The datasets manager instance.
-            profiles_manager (ProfilesManager): the manager containing the profiles of the testing set.
-            confidence_scores (np.ndarray): Array of predicted accuracy values used for thresholding profiles.
-            training_params (dict): Parameters for training the models.
-            base_model_manager (BaseModelManager): The base model manager instance.
-            testing_mpc_values (np.ndarray): MPC values for the testing data.
-            reference_mpc_values (np.ndarray): MPC values for the reference data.
-            samples_size (int, optional): Sample size for the Detectron experiment, by default 20.
-            ensemble_size (int, optional): Number of models in the ensemble, by default 10.
-            num_calibration_runs (int, optional): Number of calibration runs, by default 100.
-            patience (int, optional): Patience for early stopping, by default 3.
-            strategies (Union[Type[DetectronStrategy], List[Type[DetectronStrategy]]]): The strategies for testing disagreement.
-            allow_margin (bool, optional): Whether to allow a margin in the test, by default False.
-            margin (float, optional): Margin value for the test, by default 0.05.
-            all_dr (bool, optional): Whether to run for all declaration rates, by default False.
-
-        Returns:
-            Dict: Dictionary of med3pa profiles with detectron results.
-        """
-        global_detectron_results = None
-        min_positive_ratio = min([k for k in profiles_manager.profiles_records.keys() if k >= 0])
-        test_dataset = datasets.get_dataset_by_type('testing', True)
-        test_dataset.set_confidence_scores(confidence_scores=confidence_scores)
-        profiles_by_dr = profiles_manager.get_profiles(min_samples_ratio=min_positive_ratio)
-        last_min_confidence_level = -1
-        features = datasets.get_column_labels()
-        futures_profiles = []
-        # futures_list = []
-
-        # Ray initialization
-        ray.init(ignore_reinit_error=True)
-        path_provider = PathProvider(fn=DetectronExperiment.run, fn_id='mdr/DetectronExperiment_remote',
-                                     ignored_types=[ray.actor.ActorHandle])  # To ignore tqdm
-        server = Server.remote(path_provider=path_provider)
-
-        for dr, profiles in profiles_by_dr.items():
-            if not all_dr and dr != 100:
-                continue  # Skip all dr values except the first one if all_dr is False
-
-            remote_tqdm = ray.remote(tqdm_ray.tqdm)
-            total = 2 * num_calibration_runs * len(profiles)
-            ray_tqdm_bar = remote_tqdm.remote(total=total)
-
-            experiment_det = None
-            min_confidence_level = MDRCalculator._get_min_confidence_score(dr, confidence_scores)
-            if last_min_confidence_level != min_confidence_level:
-                for profile in profiles:
-                    detectron_results_dict = {}
-
-                    q_x, q_y_true, _, _, _ = MDRCalculator._filter_by_profile(test_dataset, path=profile.path,
-                                                                              features=features,
-                                                                              min_confidence_level=min_confidence_level)
-                    # p_x, p_y_true = datasets.get_dataset_by_type("reference")
-                    # No min_confidence_level for the reference and training sets, we want to keep their whole profiles
-                    reference_dataset = datasets.get_dataset_by_type('reference', True)
-                    ref_x, ref_y_true, _, _, _ = MDRCalculator._filter_by_profile(reference_dataset, path=profile.path,
-                                                                                  features=features,
-                                                                                  min_confidence_level=None)
-                    training_dataset = datasets.get_dataset_by_type('training', True)
-                    train_x, train_y_true, _, _, _ = MDRCalculator._filter_by_profile(training_dataset,
-                                                                                      path=profile.path,
-                                                                                      features=features,
-                                                                                      min_confidence_level=None)
-
-                    if len(q_y_true) != 0:
-                        if len(q_y_true) < samples_size:
-                            detectron_results_dict['Executed'] = "Not enough samples in tested profile"
-                            detectron_results_dict['Tested Profile size'] = len(q_y_true)
-                            detectron_results_dict['Tests Results'] = None
-
-                        elif 2 * samples_size > len(ref_y_true):
-                            detectron_results_dict['Executed'] = "Not enough samples in reference set"
-                            detectron_results_dict['Tested Profile size'] = len(q_y_true)
-                            detectron_results_dict['Tests Results'] = None
-                        else:
-                            profile_set = DatasetsManager()
-                            profile_set.set_column_labels(datasets.get_column_labels())
-                            profile_set.set_from_data(dataset_type="testing", observations=q_x, true_labels=q_y_true)
-                            profile_set.set_from_data(dataset_type="reference", observations=ref_x,
-                                                      true_labels=ref_y_true)
-                            profile_set.set_from_data(dataset_type="training", observations=train_x,
-                                                      true_labels=train_y_true)
-                            # profile_set.set_from_data(dataset_type="reference",
-                            #                           observations=datasets.get_dataset_by_type(
-                            #                               dataset_type="reference",
-                            #                               return_instance=True).get_observations(),
-                            #                           true_labels=datasets.get_dataset_by_type(dataset_type="reference",
-                            #                                                                    return_instance=True).get_true_labels())
-                            # profile_set.set_from_data(dataset_type="training",
-                            #                           observations=datasets.get_dataset_by_type(dataset_type="training",
-                            #                                                                     return_instance=True).get_observations(),
-                            #                           true_labels=datasets.get_dataset_by_type(dataset_type="training",
-                            #                                                                    return_instance=True).get_true_labels())
-                            # profile_set.set_from_data(dataset_type="validation",
-                            #                           observations=datasets.get_dataset_by_type(dataset_type="validation", return_instance=True).get_observations(),
-                            #                           true_labels=datasets.get_dataset_by_type(dataset_type="validation", return_instance=True).get_true_labels())
-
-                            path_description = "*, " + " & ".join(profile.path[1:])
-                            # print("Running Detectron on Profile:", path_description)
-                            if experiment_det is None:  # If the first profile (whole dataset)
-                                # experiment_det = DetectronExperiment.run(
-                                #     datasets=profile_set, training_params=training_params,
-                                #     base_model_manager=base_model_manager,
-                                #     samples_size=samples_size, num_calibration_runs=num_calibration_runs,
-                                #     ensemble_size=ensemble_size,
-                                #     patience=patience, allow_margin=allow_margin, margin=margin,
-                                #     ray_tqdm_bar=ray_tqdm_bar)
-
-                                future = MDRCalculator.DetectronExperiment_remote.remote(
-                                    server=server,
-                                    datasets=profile_set, calib_result=None,
-                                    training_params=training_params,
-                                    base_model_manager=base_model_manager,
-                                    samples_size=samples_size, num_calibration_runs=num_calibration_runs,
-                                    ensemble_size=ensemble_size,
-                                    patience=patience, allow_margin=allow_margin, margin=margin,
-                                    ray_tqdm_bar=ray_tqdm_bar)
-
-                                experiment_det = ray.get(future)
-
-                                detectron_results = experiment_det.analyze_results(strategies=strategies)
-                                detectron_results_dict['Executed'] = "Yes"
-                                detectron_results_dict['Tested Profile size'] = len(q_y_true)
-                                detectron_results_dict['Tests Results'] = detectron_results
-                                if dr == 100:  # Global detectron with 100% DR and whole profiles
-                                    global_detectron_results = copy.deepcopy(experiment_det)
-                            else:
-                                # Verify not too many tasks already working
-                                wait_for_pending_tasks(threshold=600, check_interval=10)
-                                # while len(futures_list) >= 5:
-                                #     _, futures_list = ray.wait(futures_list, num_returns=1)
-
-                                # Detectron not executed on reference set
-                                ray_tqdm_bar.update.remote(num_calibration_runs)
-                                # Execute on ray for subsequent profiles
-                                future = MDRCalculator.DetectronExperiment_remote.remote(
-                                    server=server,
-                                    datasets=profile_set, calib_result=experiment_det.cal_record,
-                                    training_params=training_params,
-                                    base_model_manager=base_model_manager,
-                                    samples_size=samples_size, num_calibration_runs=num_calibration_runs,
-                                    ensemble_size=ensemble_size,
-                                    patience=patience, allow_margin=allow_margin, margin=margin,
-                                    ray_tqdm_bar=ray_tqdm_bar)
-                                # futures_list.append(future)
-                                futures_profiles.append({'future': future,
-                                                         'profile': profile,
-                                                         'Tested Profile size': len(q_y_true)})
-                                detectron_results_dict['Executed'] = "Yes"
-
-                    else:
-                        detectron_results_dict['Executed'] = "Empty profile in test data"
-                        detectron_results_dict['Tested Profile size'] = len(q_y_true)
-                        detectron_results_dict['Tests Results'] = None
-
-                    # if Detectron was not applied, update progress bar
-                    if detectron_results_dict['Executed'] != "Yes":
-                        ray_tqdm_bar.update.remote(2 * num_calibration_runs)
-
-                    profile.update_detectron_results(detectron_results_dict)
-                last_profiles = profiles
-                last_min_confidence_level = min_confidence_level
-            else:
-                profiles = last_profiles
-
-        # Get results of profiles done with ray:
-        for futures_dict in futures_profiles:
-            detectron_results_dict = {}
-            profile = futures_dict['profile']
-            experiment_det = ray.get(futures_dict['future'])
-
-            detectron_results = experiment_det.analyze_results(strategies=strategies)
-            detectron_results_dict['Executed'] = "Yes"
-            detectron_results_dict['Tested Profile size'] = futures_dict['Tested Profile size']
-            detectron_results_dict['Tests Results'] = detectron_results
-            profile.update_detectron_results(detectron_results_dict)
-
-        ray.shutdown()
-
-        return global_detectron_results, profiles_by_dr
-
-    @staticmethod
-    @ray.remote
-    def DetectronExperiment_remote(server=None, path=None, *args, **kwargs):
-        if server is not None:  # Checkpointing
-            server_settings = ray.get(server.get_settings.remote())
-            storage = get_storage(server)
-            ray_checkpoint = Checkpointer(format=storage, root_path=server_settings['root_path'],
-                                          verbosity=server_settings['verbosity'],
-                                          path=server_settings['path'])
-
-            # Create temporary function to set checkpointing
-            @ray_checkpoint
-            def checkpoint_fct(*args, **kwargs):
-                return DetectronExperiment.run(*args, **kwargs)
-
-            return checkpoint_fct(*args, **kwargs)
-
-        return DetectronExperiment.run(*args, **kwargs)
-
-    # datasets, calib_result, training_params, base_model_manager, samples_size,
-    # num_calibration_runs, ensemble_size, patience, allow_margin, margin,
-    # ray_tqdm_bar = None

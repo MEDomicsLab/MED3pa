@@ -11,8 +11,6 @@ import os
 from typing import Any, Dict, TextIO
 
 from MED3pa.datasets import MaskedDataset
-from MED3pa.detectron.experiment import DetectronExperiment, DetectronResult, DetectronStrategy, \
-    EnhancedDisagreementStrategy
 from MED3pa.med3pa.models import APCModel, IPCModel
 from MED3pa.med3pa.profiles import Profile, ProfilesManager
 from MED3pa.med3pa.tree import TreeRepresentation
@@ -221,17 +219,8 @@ class Med3paResults:
         self.reference_record = reference_record
         self.test_record = test_record
         self.experiment_config = {}
-        self.detectron_results = None
         self.ipc_model = None
         self.apc_model = None
-
-    def set_detectron_results(self, detectron_results: DetectronResult = None) -> None:
-        """
-        Sets the detectron results for the Med3paDetectron experiment.
-        Args:
-            detectron_results (DetectronResult): The structure holding the detectron results.
-        """
-        self.detectron_results = detectron_results
 
     def set_experiment_config(self, config: Dict[str, Any]) -> None:
         """
@@ -265,16 +254,12 @@ class Med3paResults:
 
         reference_path = os.path.join(file_path, 'reference')
         test_path = os.path.join(file_path, 'test')
-        detectron_path = os.path.join(file_path, 'detectron')
 
         if self.reference_record:
             self.reference_record.save(file_path=reference_path)
             results['reference'] = self.reference_record.save_to_dict()
         self.test_record.save(file_path=test_path)
         results['test'] = self.test_record.save_to_dict()
-        if self.detectron_results is not None:
-            self.detectron_results.save(file_path=detectron_path, save_config=False)
-            results['detectron'] = self.detectron_results.save_to_dict()
 
         experiment_config_path = os.path.join(file_path, 'experiment_config.json')
         with open(experiment_config_path, 'w') as file:
@@ -347,10 +332,6 @@ class Med3paResults:
                 file_content["loadedFiles"][tab] = data[tab]
             else:
                 print(f"Tab {tab} not found in")
-
-        # Determine if Detectron data is present
-        if "detectron" in data:
-            file_content["loadedFiles"]["detectron_results"] = data["detectron"]
 
         self.__save_dict_to_file(file_content, file_path + file_name + '.MED3paResults')
 

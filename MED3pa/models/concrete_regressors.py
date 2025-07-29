@@ -1,6 +1,6 @@
 """Similar to ``concrete_classifiers.py``, this module contains implementations of regression models like
 RandomForestRegressor and DecisionTreeRegressor. It provides practical, ready-to-use models that comply with the
-abstract definitions, making it easier to integrate and use these models in ``med3pa`` and ``detectron``."""
+abstract definitions, making it easier to integrate and use these models in ``med3pa``."""
 
 import numpy as np
 from copy import deepcopy

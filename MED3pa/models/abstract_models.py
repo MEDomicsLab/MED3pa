@@ -3,24 +3,22 @@ the system. It includes ``Model``, which standardizes basic operations like eval
 across all models. It also introduces specialized abstract classes such as ``ClassificationModel`` and
 ``RegressionModel``, each adapting these operations to specific needs of classification and regression tasks."""
 
-from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Any, Dict, List, Optional, Self, Union
-import os
-import pickle
 import json
-
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
+import pickle
+from abc import ABC, abstractmethod
+from copy import deepcopy
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV, CalibrationDisplay
 from sklearn.metrics import roc_curve, precision_recall_curve, RocCurveDisplay
+from typing import Any, Dict, List, Optional, Self, Union
 
-from .data_strategies import DataPreparingStrategy
-
-from .classification_metrics import *
-from .regression_metrics import *
+from MED3pa.models.data_strategies import DataPreparingStrategy
+from MED3pa.models.classification_metrics import ClassificationEvaluationMetrics
+from MED3pa.models.regression_metrics import RegressionEvaluationMetrics
 
 
 class Model(ABC, BaseEstimator):

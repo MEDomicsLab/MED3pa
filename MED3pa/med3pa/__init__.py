@@ -6,4 +6,3 @@ from .mdr import *
 from .models import *
 from .profiles import *
 from .uncertainty import *
-from .comparaison import *

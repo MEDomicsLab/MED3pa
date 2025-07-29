@@ -23,7 +23,6 @@ class Profile:
         self.mean_value = None
         self.metrics = None
         self.node_information = None
-        self.detectron_results = None
 
     def to_dict(self, save_all: bool = True) -> Dict:
         """
@@ -31,15 +30,14 @@ class Profile:
 
         Returns:
             dict: A dictionary representation of the Profile instance including the node ID, path, mean value, 
-                  metrics, and any detectron results.
+                  metrics.
         """
         if save_all:
             return {
                 'id': self.node_id,
                 'path': self.path,
                 'metrics': self.metrics,
-                'node information': self.node_information,
-                'detectron_results': self.detectron_results
+                'node information': self.node_information
             }
         else:
             return {
@@ -47,21 +45,12 @@ class Profile:
                 'path': self.path,
             }
 
-    def update_detectron_results(self, detectron_results: dict) -> None:
-        """
-        Updates the detectron results associated with this profile.
-
-        Args:
-            detectron_results (dict): The results from the Detectron experiment to be added to the profile.
-        """
-        self.detectron_results = detectron_results
-
     def update_metrics_results(self, metrics: dict) -> None:
         """
         Updates the metrics associated with this profile.
 
         Args:
-            metrics (dict): The results from the Detectron experiment to be added to the profile.
+            metrics (dict): The results to be added to the profile.
         """
         self.metrics = metrics
 

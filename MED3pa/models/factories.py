@@ -8,9 +8,8 @@ import json
 import pickle
 import re
 import warnings
-from typing import Union
-
 import xgboost as xgb
+from typing import Union
 
 from .abstract_models import Model
 from .concrete_classifiers import XGBoostModel
