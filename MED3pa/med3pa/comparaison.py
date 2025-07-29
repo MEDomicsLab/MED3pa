@@ -1,17 +1,13 @@
 """
 Compares between two experiments, either two ``Med3paExperiment`` or two ``Med3paDetectronExperiment`` 
 """
-import json
+
 import os
 from typing import Any, Dict, List, Tuple, Type, Union
 
-import numpy as np
-from sklearn.model_selection import train_test_split
-
 from MED3pa.med3pa.models import *
-from MED3pa.med3pa.uncertainty import *
-from MED3pa.models.base import BaseModelManager
-from MED3pa.med3pa.experiment import Med3paResults
+from MED3pa.med3pa.results import Med3paResults
+
 
 class Med3paComparison:
     """
@@ -239,10 +235,9 @@ class Med3paComparison:
             combined['med3pa_detectron_params']['med3pa_detectron_params1'] = config1["med3pa_detectron_params"]
             combined['med3pa_detectron_params']['med3pa_detectron_params2'] = config2["med3pa_detectron_params"]
 
-
         self.config_file = combined
 
-    def compare_experiments(self):
+    def compare_experiments(self) -> None:
         """
         Compares the experiments by global metrics, profiles, and Detectron results if applicable.
         """

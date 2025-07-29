@@ -1,18 +1,18 @@
-"""
-This module handles the computation of uncertainty metrics. 
-It defines an abstract base class ``UncertaintyMetric`` and concrete implementations such as ``AbsoluteError`` for calculating uncertainty based on the difference between predicted probabilities and actual outcomes. 
-An ``UncertaintyCalculator`` class is provided, which allows users to specify which uncertainty metric to use, 
-thereby facilitating the use of customized uncertainty metrics for different analytical needs.
-"""
-from abc import ABC, abstractmethod
+"""This module handles the computation of uncertainty metrics. It defines an abstract base class
+``UncertaintyMetric`` and concrete implementations such as ``AbsoluteError`` for calculating uncertainty based on the
+difference between predicted probabilities and actual outcomes. An ``UncertaintyCalculator`` class is provided,
+which allows users to specify which uncertainty metric to use, thereby facilitating the use of customized uncertainty
+metrics for different analytical needs."""
 
 import numpy as np
+from abc import ABC, abstractmethod
 
 
 class UncertaintyMetric(ABC):
     """
     Abstract base class for uncertainty metrics. Defines the structure that all uncertainty metrics should follow.
     """
+    @staticmethod
     @abstractmethod
     def calculate(x: np.ndarray, predicted_prob: np.ndarray, y_true: np.ndarray) -> np.ndarray:
         """
@@ -33,6 +33,7 @@ class AbsoluteError(UncertaintyMetric):
     """
     Concrete implementation of the UncertaintyMetric class using absolute error.
     """
+    @staticmethod
     def calculate(x: np.ndarray, predicted_prob: np.ndarray, y_true: np.ndarray) -> np.ndarray:
         """
         Calculates the absolute error between predicted probabilities and true labels, providing a measure of
@@ -53,6 +54,7 @@ class SigmoidalError(UncertaintyMetric):
     """
     Concrete implementation of the UncertaintyMetric class using Sigmoidal error.
     """
+    @staticmethod
     def calculate(x: np.ndarray, predicted_prob: np.ndarray, y_true: np.ndarray, threshold=0.5) -> np.ndarray:
         """
         Calculates the Sigmoidal error between predicted probabilities and true labels, providing a measure of

@@ -139,7 +139,7 @@ class DatasetsManager:
         Returns information about all the datasets managed by the DatasetsManager.
 
         Args:
-            detailed (bool): If True, includes detailed information about each dataset. If False, only indicates whether each dataset is set.
+            show_details (bool): If True, includes detailed information about each dataset. If False, only indicates whether each dataset is set.
 
         Returns:
             dict: A dictionary containing information about each dataset.
@@ -183,12 +183,14 @@ class DatasetsManager:
         self.testing_set = None
         self.column_labels = None
 
-    def get_dataset_by_type(self, dataset_type: str, return_instance: bool = False) -> MaskedDataset:
+    def get_dataset_by_type(self, dataset_type: str, return_instance: bool = False) -> Union[tuple, MaskedDataset]:
         """
         Helper method to get a dataset by type.
 
         Args:
             dataset_type (str): The type of dataset to retrieve ('training', 'validation', 'reference', 'testing').
+            return_instance (bool): If True, returns the MaskedDataset instance; otherwise, returns the observations and
+             true labels. Defaults to False.
 
         Returns:
             MaskedDataset: The corresponding MaskedDataset instance.
@@ -224,7 +226,7 @@ class DatasetsManager:
 
         dataset.save_to_csv(file_path)
 
-    def __get_base_model_training_data(self, return_instance: bool = False):
+    def __get_base_model_training_data(self, return_instance: bool = False) -> Union[tuple, MaskedDataset]:
         """
         Retrieves the training dataset.
 
@@ -244,7 +246,7 @@ class DatasetsManager:
         else:
             raise ValueError("Base model training set not initialized.")
 
-    def __get_base_model_validation_data(self, return_instance: bool = False):
+    def __get_base_model_validation_data(self, return_instance: bool = False) -> Union[tuple, MaskedDataset]:
         """
         Retrieves the validation dataset.
 
@@ -264,7 +266,7 @@ class DatasetsManager:
         else:
             raise ValueError("Base model validation set not initialized.")
 
-    def __get_reference_data(self, return_instance: bool = False):
+    def __get_reference_data(self, return_instance: bool = False) -> Union[tuple, MaskedDataset]:
         """
         Retrieves the reference dataset.
 
@@ -284,7 +286,7 @@ class DatasetsManager:
         else:
             raise ValueError("Reference set not initialized.")
 
-    def __get_testing_data(self, return_instance: bool = False):
+    def __get_testing_data(self, return_instance: bool = False) -> Union[tuple, MaskedDataset]:
         """
         Retrieves the testing dataset.
 

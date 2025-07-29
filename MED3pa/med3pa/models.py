@@ -1,32 +1,31 @@
-"""
-Defines the models used within the med3pa framework. It includes classes for Individualized Predictive Confidence (IPC) models that predict uncertainty at an individual level, 
-where the regressor type can be specified by the user. 
-Additionally, it includes Aggregated Predictive Confidence (APC) models that predict uncertainty for groups of similar data points, 
-and Mixed Predictive Confidence (MPC) models that combine the predictions from IPC and APC models.
+"""Defines the models used within the MED3pa framework. It includes classes for Individualized Predictive Confidence
+(IPC) models that predict uncertainty at an individual level, where the regressor type can be specified by the user.
+Additionally, it includes Aggregated Predictive Confidence (APC) models that predict uncertainty for groups of
+similar data points, and Mixed Predictive Confidence (MPC) models that combine the predictions from IPC and APC
+models.
 """
 import json
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 import pickle
 
 import numpy as np
-# import ray
-# import joblib
+import pandas as pd
 
-# from ray.util.joblib import register_ray
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.tree import DecisionTreeRegressor, export_text
+from sklearn.tree import DecisionTreeRegressor
 
-from MED3pa.med3pa.tree import TreeRepresentation, _TreeNode
-from MED3pa.models.abstract_models import RegressionModel
-from MED3pa.models.concrete_regressors import DecisionTreeRegressorModel, RandomForestRegressorModel, EnsembleRandomForestRegressorModel
+from MED3pa.med3pa.tree import TreeRepresentation
+from MED3pa.models.concrete_regressors import (DecisionTreeRegressorModel, RandomForestRegressorModel,
+                                               EnsembleRandomForestRegressorModel)
 from MED3pa.models.data_strategies import ToDataframesStrategy
 from MED3pa.models import rfr_params, dtr_params
 
 
 class IPCModel:
     """
-    IPCModel class used to predict the Individualized predicted confidence. ie, the base model confidence for each data point.
+    IPCModel class used to predict the Individualized predicted confidence. ie, the base model confidence for each data
+    point.
     """
     default_params = {'random_state': 54288}
 
@@ -58,8 +57,10 @@ class IPCModel:
 
         Args:
             model_name (str): The name of the regression model class to use, default is 'RandomForestRegressor'.
+                Allowed values are in IPCModel.supported_regressors_mapping.
             params (Optional[Dict[str, Any]]): Parameters to initialize the regression model, default is None.
-            pretrained_mode (Optional[str]): Path to a pretrained regression model, serving as ipc model, default is None.
+            pretrained_model (Optional[str]): Path to a pretrained regression model, serving as ipc model,
+                default is None.
         """
         if model_name not in self.supported_regressors_mapping:
             raise ValueError(
@@ -84,7 +85,7 @@ class IPCModel:
             self.load_model(pretrained_model)
 
     @classmethod
-    def supported_ipc_models(cls) -> list:
+    def supported_ipc_models(cls) -> List:
         """
         Returns a list of supported IPC models.
 
@@ -104,7 +105,7 @@ class IPCModel:
         """
         return cls.supported_regressors_params
 
-    def optimize(self, param_grid: dict, cv: int, x: np.ndarray, error_prob: np.ndarray,
+    def optimize(self, param_grid: dict, cv: int, x: np.ndarray, confidence_score: np.ndarray,
                  sample_weight: np.ndarray = None) -> None:
         """
         Optimizes the model parameters using GridSearchCV.
@@ -112,36 +113,15 @@ class IPCModel:
         Args:
             param_grid (Dict[str, Any]): The parameter grid to explore.
             cv (int): The number of cross-validation folds.
+            confidence_score (np.ndarray): The confidence scores to train the IPCModel.
             x (np.ndarray): Training data.
-            y (np.ndarray): Target data.
             sample_weight (Optional[np.ndarray]): Weights for the training samples.
         """
-        # ray.init()
-        # register_ray()
         if sample_weight is None:
             sample_weight = np.full(x.shape[0], 1)
 
         grid_search = GridSearchCV(estimator=self.model.model, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=0)
-        grid_search.fit(x, error_prob, sample_weight=sample_weight)
-
-        # import joblib
-        # from ray.util.joblib import register_ray
-        # register_ray()
-        # with joblib.parallel_backend('ray'):
-        #     grid_search.fit(x, error_prob, sample_weight=sample_weight)
-
-        # with joblib.parallel_backend('ray'):
-        #     grid_search = GridSearchCV(
-        #         estimator=self.model.model,
-        #         param_grid=param_grid,  # Hyperparameter grid
-        #         cv=cv,  # Cross-validation strategy
-        #         n_jobs=-1,  # Use all available resources
-        #         verbose=0  # Control verbosity
-        #     )
-        #     grid_search.fit(x, error_prob, sample_weight=sample_weight)
-
-        # # Shutdown Ray after completion
-        # ray.shutdown()
+        grid_search.fit(x, confidence_score, sample_weight=sample_weight)
 
         self.model.set_model(grid_search.best_estimator_)
         self.model.update_params(grid_search.best_params_)
@@ -149,15 +129,15 @@ class IPCModel:
         self.grid_search_params = param_grid
         self.optimized = True
 
-    def train(self, x: np.ndarray, error_prob: np.ndarray, **params) -> None:
+    def train(self, x: np.ndarray, confidence_score: np.ndarray, **params) -> None:
         """
         Trains the model on the provided training data and error probabilities.
 
         Args:
             x (np.ndarray): Feature matrix for training.
-            error_prob (np.ndarray): Error probabilities corresponding to each training instance.
+            confidence_score (np.ndarray): The confidence scores corresponding to each training instance.
         """
-        self.model.train(x, error_prob, **params)
+        self.model.train(x, confidence_score, **params)
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """
@@ -171,8 +151,8 @@ class IPCModel:
         """
         return self.model.predict(x)
 
-    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False) -> Dict[
-        str, float]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False
+                 ) -> Dict[str, float]:
         """
         Evaluates the model using specified metrics.
 
@@ -232,7 +212,8 @@ class IPCModel:
 
 class APCModel:
     """
-    APCModel class used to predict the Aggregated predicted confidence. ie, the base model confidence for a group of similar data points.
+    APCModel class used to predict the Aggregated predicted confidence. ie, the base model confidence for a group of
+    similar data points.
     """
     default_params = {'max_depth': 3, 'min_samples_leaf': 1, 'random_state': 54288}
 
@@ -246,13 +227,16 @@ class APCModel:
     def __init__(self, features: List[str], params: Optional[Dict[str, Any]] = None,
                  tree_file_path: Optional[str] = None, pretrained_model: Optional[str] = None) -> None:
         """
-        Initializes the APCModel with the necessary components to perform tree-based regression and to build a tree representation.
+        Initializes the APCModel with the necessary components to perform tree-based regression and to build a tree
+        representation.
 
         Args:
             features (List[str]): List of features used in the model.
-            params (Optional[Dict[str, Any]]): Parameters to initialize the regression model, default is settings for a basic decision tree.
+            params (Optional[Dict[str, Any]]): Parameters to initialize the regression model, default is settings for
+                a basic decision tree.
             tree_file_path (Optional[str]): Path to the saved tree JSON file, default is None.
-            pretrained_mode (Optional[str]): Path to a pretrained DecisionTree model, serving as apc model, default is None.
+            pretrained_model (Optional[str]): Path to a pretrained DecisionTree model, serving as apc model,
+                default is None.
         """
         if params is None:
             params = self.default_params
@@ -299,13 +283,13 @@ class APCModel:
         """
         return cls.supported_params
 
-    def train(self, x: np.ndarray, error_prob: np.ndarray) -> None:
+    def train(self, x: np.ndarray, error_prob: np.ndarray | pd.Series) -> None:
         """
         Trains the model using the provided data and error probabilities and builds the tree representation.
 
         Args:
             x (np.ndarray): Feature matrix for training.
-            error_prob (np.ndarray): Error probabilities corresponding to each training instance.
+            error_prob (np.ndarray | pd.Series): Error probabilities corresponding to each training instance.
         """
         if not self.pretrained:
             self.model.train(x, error_prob)
@@ -313,18 +297,7 @@ class APCModel:
                                                                 labels=error_prob)
         self.treeRepresentation.head = self.treeRepresentation.build_tree(self.model, df_X, error_prob, 0)
 
-    def print_decision_tree_structure(tree_model, feature_names=None):
-        """
-        Prints the structure of a trained DecisionTreeRegressor.
-        
-        Args:
-        tree_model: The trained DecisionTreeRegressor model.
-        feature_names: List of feature names to use in the output. Default is None.
-        """
-        tree_rules = export_text(tree_model, feature_names=feature_names)
-        print(tree_rules)
-
-    def optimize(self, param_grid: dict, cv: int, x: np.ndarray, error_prob: np.ndarray,
+    def optimize(self, param_grid: dict, cv: int, x: np.ndarray, confidence_score: np.ndarray,
                  sample_weight: np.ndarray = None) -> None:
         """
         Optimizes the model parameters using GridSearchCV.
@@ -333,20 +306,20 @@ class APCModel:
             param_grid (Dict[str, Any]): The parameter grid to explore.
             cv (int): The number of cross-validation folds.
             x (np.ndarray): Training data.
-            y (np.ndarray): Target data.
+            confidence_score (np.ndarray): The confidence scores to train the APCModel.
             sample_weight (Optional[np.ndarray]): Weights for the training samples.
         """
         if sample_weight is None:
             sample_weight = np.full(x.shape[0], 1)
         grid_search = GridSearchCV(estimator=self.model.model, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=0)
-        grid_search.fit(x, error_prob, sample_weight=sample_weight)
+        grid_search.fit(x, confidence_score, sample_weight=sample_weight)
         self.model.set_model(grid_search.best_estimator_)
         self.model.update_params(grid_search.best_params_)
         self.params.update(grid_search.best_params_)
         self.grid_search_params = param_grid
         df_X, df_y, df_w = self.dataPreparationStrategy.execute(column_labels=self.features, observations=x,
-                                                                labels=error_prob)
-        self.treeRepresentation.build_tree(self.model, df_X, error_prob, node_id=0)
+                                                                labels=confidence_score)
+        self.treeRepresentation.build_tree(self.model, df_X, confidence_score, node_id=0)
         self.optimized = True
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -354,8 +327,7 @@ class APCModel:
         Predicts error probabilities using the tree representation for the given input observations.
 
         Args:
-            x (np.ndarray): Feature matrix for which to predict error probabilities.
-            depth (Optional[int]): The maximum depth of the tree to use for predictions.
+            X (np.ndarray): Feature matrix for which to predict error probabilities.
 
         Returns:
             np.ndarray: Predicted error probabilities based on the aggregated confidence levels.
@@ -372,8 +344,8 @@ class APCModel:
 
         return np.array(predictions)
 
-    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False) -> Dict[
-        str, float]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False
+                 ) -> Dict[str, float]:
         """
         Evaluates the model using specified metrics.
 

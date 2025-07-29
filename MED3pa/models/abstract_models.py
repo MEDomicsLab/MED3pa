@@ -1,26 +1,21 @@
-"""
-The abstract_models.py module defines core abstract classes that serve as the foundation for model management in the system. 
-It includes ``Model``, which standardizes basic operations like evaluation and parameter validation..etc across all models. 
-It also introduces specialized abstract classes such as ``ClassificationModel`` and ``RegressionModel``, 
-each adapting these operations to specific needs of classification and regression tasks.
-"""
+"""The abstract_models.py module defines core abstract classes that serve as the foundation for model management in
+the system. It includes ``Model``, which standardizes basic operations like evaluation and parameter validation
+across all models. It also introduces specialized abstract classes such as ``ClassificationModel`` and
+``RegressionModel``, each adapting these operations to specific needs of classification and regression tasks."""
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Self, Union
 import os
 import pickle
 import json
 
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Use a non-interactive backend
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV, CalibrationDisplay
-from sklearn.metrics import roc_curve, precision_recall_curve, balanced_accuracy_score, recall_score, roc_auc_score, \
-    average_precision_score, matthews_corrcoef, f1_score, precision_score, RocCurveDisplay
+from sklearn.metrics import roc_curve, precision_recall_curve, RocCurveDisplay
 
 from .data_strategies import DataPreparingStrategy
 
@@ -40,7 +35,15 @@ class Model(ABC, BaseEstimator):
         pickled_model (Boolean): A boolean indicating whether the model has been loaded from a pickled file.
     """
 
-    def __init__(self, random_state: int = None) -> None:
+    def __init__(self, random_state: int = None, verbose: bool = False) -> None:
+        """
+        Initializes the Model instance.
+
+        Args:
+            random_state (int): The random state used to train the model.
+            verbose (Boolean): Control of output messages.
+
+        """
         super().__init__()
         self.model = None
         self.model_class = None
@@ -49,6 +52,7 @@ class Model(ABC, BaseEstimator):
         self.pickled_model = False
         self.file_path = None
         self._random_state = random_state
+        self.verbose = verbose
 
     def get_model(self) -> Any:
         """
@@ -59,7 +63,7 @@ class Model(ABC, BaseEstimator):
         """
         return self.model
 
-    def get_path(self) -> Any:
+    def get_path(self) -> str:
         """
         Retrieves the file path of the model if it has been loaded from a pickled file.
 
@@ -97,9 +101,9 @@ class Model(ABC, BaseEstimator):
         """
         return self.params
 
-    def is_pickled(self):
+    def is_pickled(self) -> bool:
         """
-        Returns whether or not the model has been loaded from a pickled file.
+        Returns whether the model has been loaded from a pickled file.
         
         Returns:
             Boolean: has the model been loaded from a pickled file.
@@ -116,12 +120,15 @@ class Model(ABC, BaseEstimator):
         self.model = model
         self.model_class = type(model)
 
-    def set_params(self, params: dict = None, **kwargs) -> None:
+    def set_params(self, params: dict = None, **kwargs) -> Self:
         """
         Sets the parameters for the model. These parameters are typically used for model initialization or configuration.
 
         Args:
             params (Dict[str, Any]): A dictionary of parameters for the model.
+
+        Returns:
+            Self: The model instance with the updated parameters.
         """
         if params is None:
             params = {}
@@ -130,7 +137,7 @@ class Model(ABC, BaseEstimator):
         self.params = params
         return self
 
-    def set_file_path(self, file_path: str):
+    def set_file_path(self, file_path: str) -> None:
         """
         Sets the file path of the model. 
 
@@ -139,7 +146,7 @@ class Model(ABC, BaseEstimator):
         """
         self.file_path = file_path
 
-    def update_params(self, params: dict):
+    def update_params(self, params: dict) -> None:
         """
         Updates the current model parameters by merging new parameter values from the given dictionary.
         This method allows for dynamic adjustment of model configuration during runtime.
@@ -149,7 +156,7 @@ class Model(ABC, BaseEstimator):
         """
         self.params.update(params)
 
-    def set_data_strategy(self, strategy: DataPreparingStrategy):
+    def set_data_strategy(self, strategy: DataPreparingStrategy) -> None:
         """
         Sets the underlying model's data preparation strategy.
 
@@ -215,7 +222,8 @@ class Model(ABC, BaseEstimator):
         """
         pass
 
-    def print_evaluation_results(self, results: Dict[str, float]) -> None:
+    @staticmethod
+    def print_evaluation_results(results: Dict[str, float]) -> None:
         """
         Prints the evaluation results in a formatted manner.
 
@@ -226,7 +234,8 @@ class Model(ABC, BaseEstimator):
         for metric, value in results.items():
             print(f"{metric}: {value:.2f}")
 
-    def validate_params(self, params: Dict[str, Any], valid_param_sets: List[set]) -> Dict[str, Any]:
+    @staticmethod
+    def validate_params(params: Dict[str, Any], valid_param_sets: List[set]) -> Dict[str, Any]:
         """
         Validates the model parameters against a list of valid parameter sets.
 
@@ -253,18 +262,34 @@ class ClassificationModel(Model, ClassifierMixin):
     classification-specific methods.
     """
 
-    def __init__(self, objective: str = 'binary:logistic', class_weighting: bool = False, random_state: int = None):
-        super().__init__(random_state=random_state)
+    def __init__(self, objective: str = 'binary:logistic', class_weighting: bool = False, random_state: int = None,
+                 verbose: bool = False):
+        """
+        Initializes the ClassificationModel instance.
+
+        Args:
+            objective (str): The objective of the model, used by certain model packages.
+            class_weighting (bool): Whether to add class weighting correction during model training. Default: False
+            random_state (Optional int): The random state used to train the model.
+            verbose (Boolean): Control of output messages.
+
+        """
+        super().__init__(random_state=random_state, verbose=verbose)
         self._objective = objective
         self._class_weighting = class_weighting
         self._threshold = 0.5
         self._calibration = None
         self.classes_ = np.array([0, 1])  # To allow model calibration. The CalibratedClassifierCV uses this variable to
-
-    # ensure that the model to be calibrated has been fitted.
+        # ensure that the model to be calibrated has been fitted.
 
     @property
-    def threshold(self):
+    def threshold(self) -> float:
+        """
+        Returns the threshold for the classification.
+
+        Returns:
+            float: The threshold for the classification.
+        """
         return self._threshold
 
     @staticmethod
@@ -288,7 +313,16 @@ class ClassificationModel(Model, ClassifierMixin):
         train_weights = np.array([pos_weight if label == 1 else neg_weight for label in y_train])
         return train_weights
 
-    def calibrate_model(self, y_pred, y_true, data=None, method='sklearn'):
+    def calibrate_model(self, *, y_true: Union[pd.Series, np.ndarray], data: pd.DataFrame, method: str = 'sklearn'
+                        ) -> None:
+        """
+        Calibrates the model based on the provided data.
+
+        Args:
+            y_true (Union[pd.Series, np.ndarray]): Labels of data used to calibrate the model.
+            data (pd.DataFrame): Data used to calibrate the model.
+            method (str): Method used to calibrate the model. Possible values are ['sklearn']. Default: 'sklearn'
+        """
         if method == 'sklearn':
             calibration = CalibratedClassifierCV(estimator=deepcopy(self), method='sigmoid', cv='prefit')
             calibration.fit(data, y_true)
@@ -297,25 +331,43 @@ class ClassificationModel(Model, ClassifierMixin):
         self._calibration = calibration
 
     @abstractmethod
-    def fit(self, X, y, threshold: str = None, calibrate: bool = False, *params):
+    def fit(self, x_train: Union[np.ndarray, pd.DataFrame], y_train: Union[np.ndarray, pd.Series],
+            training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool, weights: np.ndarray = None,
+            *params) -> None:
         """
+        Fits the classification model using provided training and validation data.
+        This method is functionally equivalent to train. Subclasses may override either fit or train,
+        and the other will default to the same behavior.
 
+        Args:
+            x_train (Union[np.ndarray, pd.DataFrame]): observations for training.
+            y_train (Union[np.ndarray, pd.Series]): Labels for training.
+            training_parameters (Dict[str, Any], optional): Additional training parameters.
+            balance_train_classes (bool): Whether to balance the training classes.
+            weights (Optional[np.ndarray], optional): Weights for the training data.
+            *params : Additional training parameters for specific models.
+
+        Raises:
+            NotImplementedError: Must be implemented by subclasses.
         """
         pass
 
     @abstractmethod
-    def train(self, x_train: np.ndarray, y_train: np.ndarray, training_parameters: Optional[Dict[str, Any]],
-              balance_train_classes: bool, weights: np.ndarray = None, *params) -> None:
+    def train(self, x_train: Union[np.ndarray, pd.DataFrame], y_train: Union[np.ndarray, pd.Series],
+              training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool, weights: np.ndarray = None,
+              *params) -> None:
         """
         Trains the classification model using provided training and validation data.
+        This method is functionally equivalent to fit. Subclasses may override either fit or train,
+        and the other will default to the same behavior.
 
         Args:
-            x_train (np.ndarray): observations for training.
-            y_train (np.ndarray): Labels for training.
+            x_train (Union[np.ndarray, pd.DataFrame]): observations for training.
+            y_train (Union[np.ndarray, pd.Series]): Labels for training.
             training_parameters (Dict[str, Any], optional): Additional training parameters.
             balance_train_classes (bool): Whether to balance the training classes.
-            weights (Optional[np.ndarray], optional): Weights for the training data
-            *params : Additional training parameters for specific models
+            weights (Optional[np.ndarray], optional): Weights for the training data.
+            *params : Additional training parameters for specific models.
 
         Raises:
             NotImplementedError: Must be implemented by subclasses.
@@ -324,12 +376,15 @@ class ClassificationModel(Model, ClassifierMixin):
 
     def __init_subclass__(cls, **kwargs):
         """
-        Initializes the fit and train methods so only one needs to be defined if child classes
+        Initializes the fit and train methods so only one needs to be defined in child classes
+
+        Raises:
+            NotImplementedError: At least one of the 'fit' or 'train' methods must be defined.
         """
         super().__init_subclass__(**kwargs)
         # Check if either fit or train has been overridden in the subclass
         if 'fit' not in cls.__dict__ and 'train' not in cls.__dict__:
-            raise TypeError(f"Class {cls.__name__} must implement either `fit` or `train`.")
+            raise NotImplementedError(f"Class {cls.__name__} must implement either `fit` or `train`.")
 
         if 'fit' not in cls.__dict__:
             cls.fit = cls.train
@@ -340,7 +395,7 @@ class ClassificationModel(Model, ClassifierMixin):
                           x_test: np.ndarray, y_test: np.ndarray,
                           training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool) -> None:
         """
-        Trains the classification model using provided training and validation data.
+        Trains the classification model using provided training and validation data. Specific to Detectron experiments.
 
         Args:
             x_train (np.ndarray): observations for training.
@@ -378,8 +433,6 @@ class ClassificationModel(Model, ClassifierMixin):
         Returns:
             np.ndarray: The predicted labels or probabilities.
 
-        Raises:
-            NotImplementedError: Must be implemented by subclasses.
         """
         return (self.predict_proba(X)[:, 1] >= self._threshold).astype(int)
 
@@ -430,7 +483,6 @@ class ClassificationModel(Model, ClassifierMixin):
         preds = self.predict(X)
         evaluation_results = {}
         for metric_name in eval_metrics:
-            # translated_metric_name = translated_metrics.get(metric_name)
             metric_function = ClassificationEvaluationMetrics.get_metric(metric_name)
             if metric_function:
                 evaluation_results[metric_name] = metric_function(y_true=y, y_prob=probs, y_pred=preds)
@@ -441,23 +493,16 @@ class ClassificationModel(Model, ClassifierMixin):
             self.print_evaluation_results(results=evaluation_results)
         return evaluation_results
 
-    def plot_probability_distribution(self, X, y, save_path=None):
+    def plot_probability_distribution(self, X: np.ndarray, y: np.ndarray, save_path: str = None) -> None:
         """
-        Plot the predicted probability distributions for each class in a binary classification model.
+        Plots the predicted probability distributions for each class in a binary classification model.
 
-        Parameters:
-        model : sklearn or similar binary classification model
-            The trained binary classification model.
-        X : array-like, shape (n_samples, n_features)
-            The input samples.
-        y : array-like, shape (n_samples,)
-            The true labels.
-
-        Returns:
-        None
+        Args:
+            X (np.ndarray): Features for evaluation.
+            y (np.ndarray): True labels for evaluation.
+            save_path (str): Optional path to save the plot. Defaults to None, which displays the plot in terminal.
         """
         plt.clf()
-        # Predict probabilities for each class
         probas = self.predict_proba(X)[:, 1]
 
         # Separate probabilities for each class
@@ -465,21 +510,26 @@ class ClassificationModel(Model, ClassifierMixin):
         class_1_probas = probas[y == 1]
 
         # Plot the probability distributions
-        # plt.figure()
-        plt.hist(class_1_probas, bins=20, alpha=0.5, label='Class 1', color='blue')  # , density=1)
-        plt.hist(class_0_probas, bins=20, alpha=0.5, label='Class 0', color='red')  # , density=1)
+        plt.hist(class_1_probas, bins=20, alpha=0.5, label='Class 1', color='blue')
+        plt.hist(class_0_probas, bins=20, alpha=0.5, label='Class 0', color='red')
         plt.xlabel('Predicted Probability')
         plt.ylabel('Frequency (%)')
         plt.title('Real Class Probability Distribution for Each Class')
         plt.legend(loc='upper center')
-        # plt.gca().set_yticklabels(
-        #     ['{:.0f}%'.format(x * 100) for x in plt.gca().get_yticks()])  # Format y-axis labels as percentages
         if save_path:
             plt.savefig(save_path)
         else:
             plt.show()
 
-    def plot_roc_curve(self, X, target, save_path=None):
+    def plot_roc_curve(self, X: np.ndarray, target: np.ndarray, save_path: str = None) -> None:
+        """
+        Plots the AUROC curve of the model.
+
+        Args:
+            X (np.ndarray): Features for evaluation.
+            target (np.ndarray): True labels for evaluation.
+            save_path (str): Optional path to save the plot. Defaults to None, which displays the plot in terminal.
+        """
         plt.clf()
         predictions = self.predict_proba(X)[:, 1]
         fpr, tpr, threshold = roc_curve(target, predictions)
@@ -493,9 +543,17 @@ class ClassificationModel(Model, ClassifierMixin):
         else:
             plt.show()
 
-    def show_calibration(self, data, target, save_path=None):
+    def show_calibration(self, X: np.ndarray, target: np.ndarray, save_path: str = None) -> None:
+        """
+        Plots the calibration curve of the model.
+
+        Args:
+            X (np.ndarray): Features for evaluation.
+            target (np.ndarray): True labels for evaluation.
+            save_path (str): Optional path to save the plot. Defaults to None, which displays the plot in terminal.
+        """
         plt.clf()
-        predicted_prob = self.predict_proba(data)[:, 1]
+        predicted_prob = self.predict_proba(X)[:, 1]
         CalibrationDisplay.from_predictions(target, predicted_prob)
         if save_path:
             plt.savefig(save_path)
@@ -503,16 +561,36 @@ class ClassificationModel(Model, ClassifierMixin):
             plt.show()
 
     @staticmethod
-    def _optimal_threshold_auc(target, predicted):
+    def _optimal_threshold_auc(target: np.ndarray, predicted: np.ndarray) -> float:
+        """
+        Calculates the optimal binary classification threshold using the AUROC method.
+
+        Args:
+            target (np.ndarray): True labels for evaluation.
+            predicted (np.ndarray): Labels predicted by the model.
+
+        Returns:
+            float: The optimal binary classification threshold using the AUROC method.
+        """
         fpr, tpr, threshold = roc_curve(target, predicted)
         i = np.arange(len(tpr))
         roc = pd.DataFrame({'tf': pd.Series(tpr - (1 - fpr), index=i), 'threshold': pd.Series(threshold, index=i)})
-        roc_t = roc.iloc[(roc.tf).abs().argsort()[:1]]
+        roc_t = roc.iloc[roc.tf.abs().argsort()[:1]]
 
         return list(roc_t['threshold'])[0]
 
     @staticmethod
-    def _optimal_threshold_auprc(target, predicted):
+    def _optimal_threshold_auprc(target: np.ndarray, predicted: np.ndarray) -> float:
+        """
+        Calculates the optimal binary classification threshold using the AUPRC method.
+
+        Args:
+            target (np.ndarray): True labels for evaluation.
+            predicted (np.ndarray): Labels predicted by the model.
+
+        Returns:
+            float: The optimal binary classification threshold using the AUPRC method.
+        """
         precision, recall, threshold = precision_recall_curve(target, predicted)
         # Remove last element
         precision = precision[:-1]
@@ -520,7 +598,7 @@ class ClassificationModel(Model, ClassifierMixin):
 
         i = np.arange(len(recall))
         roc = pd.DataFrame({'tf': pd.Series(precision * recall, index=i), 'threshold': pd.Series(threshold, index=i)})
-        roc_t = roc.iloc[(roc.tf).abs().argsort()[:1]]
+        roc_t = roc.iloc[roc.tf.abs().argsort()[:1]]
 
         return list(roc_t['threshold'])[0]
 
@@ -562,7 +640,8 @@ class RegressionModel(Model):
         """
         pass
 
-    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False) -> Dict[str, float]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: List[str], print_results: bool = False
+                 ) -> Dict[str, float]:
         """
         Evaluates the model using specified metrics.
 

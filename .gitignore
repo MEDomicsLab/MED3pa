@@ -31,3 +31,4 @@ build/
 experiments/
 
 *.MED3paResults
+*.csv

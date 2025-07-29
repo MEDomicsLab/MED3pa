@@ -19,7 +19,8 @@ class XGBoostModel(ClassificationModel):
     A concrete implementation of the ClassificationModel class for XGBoost models.
     This class provides functionalities to train, predict, and evaluate models built with the XGBoost library.
     """
-    def __init__(self, params: Optional[Dict[str, Any]] = None, model: Optional[Union[xgb.Booster, xgb.XGBClassifier]] = None) -> None:
+    def __init__(self, params: Optional[Dict[str, Any]] = None,
+                 model: Optional[Union[xgb.Booster, xgb.XGBClassifier]] = None) -> None:
         """
         Initializes the XGBoostModel either with parameters for a new model or a loaded pickled model.
 
@@ -55,7 +56,8 @@ class XGBoostModel(ClassificationModel):
         else:
             return features
 
-    def train(self, x_train: np.ndarray, y_train: np.ndarray, x_validation: np.ndarray, y_validation: np.ndarray, training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool) -> None:
+    def train(self, x_train: np.ndarray, y_train: np.ndarray, x_validation: np.ndarray, y_validation: np.ndarray,
+              training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool) -> None:
         """
         Trains the model on the provided dataset.
 

@@ -2,309 +2,26 @@
 Orchestrates the execution of the med3pa method and integrates the functionality of other modules to run comprehensive experiments. 
 It includes classes to manage and store results ``Med3paResults``, execute experiments like ``Med3paExperiment`` and ``Med3paDetectronExperiment``, and integrate results from the Detectron method ``Med3paDetectronResults``
 """
-import json
+# import json
 import os
+import matplotlib.pyplot as plt
 from typing import Any, Dict, List, Tuple, Type, Union
 
-import numpy as np
+# import numpy as np
 from checkpointer import checkpoint
 from sklearn.model_selection import train_test_split
 
-from MED3pa.datasets import DatasetsManager, MaskedDataset
+from MED3pa.datasets import DatasetsManager
 from MED3pa.detectron.experiment import DetectronExperiment, DetectronResult, DetectronStrategy, \
     EnhancedDisagreementStrategy
-from MED3pa.med3pa.convert_results import generate_Med3paResults_from_dict
 from MED3pa.med3pa.mdr import MDRCalculator
-from MED3pa.med3pa.models import *
+from MED3pa.med3pa.models import APCModel, IPCModel, MPCModel
 from MED3pa.med3pa.profiles import Profile, ProfilesManager
+from MED3pa.med3pa.results import Med3paResults, Med3paRecord
 from MED3pa.med3pa.uncertainty import *
 from MED3pa.models.base import BaseModelManager
 from MED3pa.models.classification_metrics import *
 from MED3pa.models.concrete_regressors import *
-from MED3pa.med3pa.tree import TreeRepresentation
-
-
-def to_serializable(obj: Any, additional_arg: Any = None) -> Any:
-    """Convert an object to a JSON-serializable format.
-    Args:
-        obj (Any): The object to convert.
-    Returns:
-        Any: The JSON-serializable representation of the object.
-    """
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    if isinstance(obj, (np.integer, np.floating)):
-        return obj.item()
-    if isinstance(obj, Profile):
-        if additional_arg is not None:
-            return obj.to_dict(additional_arg)
-        else:
-            return obj.to_dict()
-    if isinstance(obj, dict):
-        return {k: to_serializable(v, additional_arg) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [to_serializable(v, additional_arg) for v in obj]
-    return obj
-
-
-class Med3paRecord:
-    """
-    Class to store and manage results from the MED3PA method on one set.
-    """
-
-    def __init__(self) -> None:
-        self.metrics_by_dr: Dict[int, Dict] = {}
-        self.models_evaluation: Dict[str, Dict] = {}
-        self.profiles_manager: ProfilesManager = None
-        self.datasets: Dict[int, MaskedDataset] = {}
-        self.experiment_config = {}
-        self.tree = None
-        self.ipc_scores = None
-        self.apc_scores = None
-        self.mpc_scores = None
-
-    def set_metrics_by_dr(self, metrics_by_dr: Dict) -> None:
-        """
-        Set the calculated metrics by declaration rate.
-        Args:
-            metrics_by_dr (Dict): Dictionary of metrics by declaration rate.
-        """
-        self.metrics_by_dr = metrics_by_dr
-
-    def set_profiles_manager(self, profile_manager: ProfilesManager) -> None:
-        """
-        Set the profile manager for this Med3paResults instance.
- 
-        Args:
-            profile_manager (ProfilesManager): The ProfileManager instance.
-        """
-        self.profiles_manager = profile_manager
-
-    def set_models_evaluation(self, ipc_evaluation: Dict, apc_evaluation: Dict = None) -> None:
-        """
-        Set models evaluation metrics.
-        Args:
-            ipc_evaluation (Dict): Evaluation metrics for IPC model.
-            apc_evaluation (Dict): Evaluation metrics for APC model.
-        """
-        self.models_evaluation['IPC_evaluation'] = ipc_evaluation
-
-        if apc_evaluation is not None:
-            self.models_evaluation['APC_evaluation'] = apc_evaluation
-
-    def set_tree(self, tree: TreeRepresentation):
-        """
-        Sets the constructed tree
-        """
-        self.tree = tree
-
-    def set_dataset(self, mode: str, dataset: MaskedDataset) -> None:
-        """
-        Saves the dataset for a given sample ratio.
-        Args:
-            samples_ratio (int): The sample ratio.
-            dataset (MaskedDataset): The MaskedDataset instance.
-        """
-
-        self.datasets[mode] = dataset
-
-    def save(self, file_path: str) -> None:
-        """
-        Saves the experiment results.
-        Args:
-            file_path (str): The file path to save the JSON files.
-        """
-        # Ensure the main directory exists
-        os.makedirs(file_path, exist_ok=True)
-
-        metrics_file_path = os.path.join(file_path, 'metrics_dr.json')
-        with open(metrics_file_path, 'w') as file:
-            json.dump(self.metrics_by_dr, file, default=to_serializable, indent=4)
-
-        if self.profiles_manager is not None:
-            profiles_file_path = os.path.join(file_path, 'profiles.json')
-            with open(profiles_file_path, 'w') as file:
-                json.dump(self.profiles_manager.get_profiles(), file, default=to_serializable, indent=4)
-
-            lost_profiles_file_path = os.path.join(file_path, 'lost_profiles.json')
-            with open(lost_profiles_file_path, 'w') as file:
-                json.dump(self.profiles_manager.get_lost_profiles(), file,
-                          default=lambda x: to_serializable(x, additional_arg=False), indent=4)
-
-        if self.models_evaluation is not None:
-            models_evaluation_file_path = os.path.join(file_path, 'models_evaluation.json')
-            with open(models_evaluation_file_path, 'w') as file:
-                json.dump(self.models_evaluation, file, default=to_serializable, indent=4)
-
-        for mode, dataset in self.datasets.items():
-            dataset_path = os.path.join(file_path, f'dataset_{mode}.csv')
-            dataset.save_to_csv(dataset_path)
-
-        if self.tree is not None:
-            tree_path = os.path.join(file_path, 'tree.json')
-            self.tree.save_tree(tree_path)
-
-    def save_to_dict(self) -> dict:
-        """
-        Collects the experiment results in a dictionary.
-        Returns:
-            dict: A dictionary containing all the saved elements.
-        """
-        result = {}
-
-        # Store profiles if available
-        if self.profiles_manager is not None:
-            # serializable_fct = lambda x: to_serializable(x, additional_arg=False)
-            result['lost_profiles'] = to_serializable(self.profiles_manager.get_lost_profiles(), False)
-            # result['profiles'] = to_serializable(self.profiles_manager.get_profiles())
-
-        # Store metrics by declaration rate (DR)
-        result['metrics_dr'] = self.metrics_by_dr
-
-        # Store models evaluation if available
-        if self.models_evaluation is not None:
-            result['models_evaluation'] = self.models_evaluation
-
-        # Store profiles if available
-        if self.profiles_manager is not None:
-            # result['lost_profiles'] = to_serializable(self.profiles_manager.get_lost_profiles())
-            result['profiles'] = to_serializable(self.profiles_manager.get_profiles())
-
-        # Store tree structure if available
-        if self.tree is not None:
-            result['tree'] = self.tree.to_dict()
-
-        return result
-
-    def get_profiles_manager(self) -> ProfilesManager:
-        """
-        Retrieves the profiles manager for this Med3paResults instance
-        """
-        return self.profiles_manager
-
-    def set_confidence_scores(self, scores: np.ndarray, mode: str) -> None:
-        if mode == 'ipc':
-            self.ipc_scores = scores
-        elif mode == "apc":
-            self.apc_scores = scores
-        elif mode == "mpc":
-            self.mpc_scores = scores
-
-    def get_confidence_scores(self, mode: str) -> np.ndarray:
-        if mode == 'ipc':
-            return self.ipc_scores
-        elif mode == "apc":
-            return self.apc_scores
-        elif mode == "mpc":
-            return self.mpc_scores
-
-
-class Med3paResults:
-    """
-    Class to store and manage results from the MED3PA complete experiment.
-    """
-
-    def __init__(self, reference_record: Med3paRecord, test_record: Med3paRecord) -> None:
-        self.reference_record = reference_record
-        self.test_record = test_record
-        self.experiment_config = {}
-        self.detectron_results = None
-
-    def set_detectron_results(self, detectron_results: DetectronResult = None) -> None:
-        """
-        Sets the detectron results for the Med3paDetectron experiment.
-        Args:
-            detectron_results (DetectronResult): The structure holding the detectron results.
-        """
-        self.detectron_results = detectron_results
-
-    def set_experiment_config(self, config: Dict[str, Any]) -> None:
-        """
-        Sets or updates the configuration for the Med3pa experiment.
-        Args:
-            config (Dict[str, Any]): A dictionary of experiment configuration.
-        """
-        self.experiment_config.update(config)
-
-    def set_models(self, ipc_model: IPCModel, apc_model: APCModel = None):
-        self.ipc_model = ipc_model
-        self.apc_model = apc_model
-
-    def save(self, file_path: str, save_med3paResults: bool = True) -> None:
-        """
-        Saves the experiment results.
-        Args:
-            file_path (str): The file path to save the JSON files.
-            save_med3paResults (bool, optional): Whether to save the results in a Med3paResults file. Defaults to True
-        """
-        results = {}
-        # Ensure the main directory exists
-        os.makedirs(file_path, exist_ok=True)
-
-        reference_path = os.path.join(file_path, 'reference')
-        test_path = os.path.join(file_path, 'test')
-        detectron_path = os.path.join(file_path, 'detectron')
-
-        if self.reference_record:
-            self.reference_record.save(file_path=reference_path)
-            results['reference'] = self.reference_record.save_to_dict()
-        self.test_record.save(file_path=test_path)
-        results['test'] = self.test_record.save_to_dict()
-        if self.detectron_results is not None:
-            self.detectron_results.save(file_path=detectron_path, save_config=False)
-            results['detectron'] = self.detectron_results.save_to_dict()
-
-        experiment_config_path = os.path.join(file_path, 'experiment_config.json')
-        with open(experiment_config_path, 'w') as file:
-            json.dump(self.experiment_config, file, default=to_serializable, indent=4)
-
-        results['infoConfig'] = {'experiment_config': self.experiment_config}
-
-        if save_med3paResults:
-            generate_Med3paResults_from_dict(results, file_path=file_path)
-
-    def save_models(self, file_path: str, mode: str = 'all', id: str = None) -> None:
-        """
-        Saves the experiment ipc and apc models as .pkl files, alongside the tree structure for the test set.
-        Args:
-            file_path (str): The file path to save the pickled files.
-            mode (str): Defines the type of models to save, either ipc, apc, or both.
-            id (str): Optional identifier to append to the filenames.
-        """
-        # Ensure the main directory exists
-        os.makedirs(file_path, exist_ok=True)
-
-        # Function to generate the file name with optional id
-        def generate_file_name(base_name, id):
-            return f"{id}_{base_name}" if id else base_name
-
-        if mode == 'all':
-            if self.ipc_model:
-                ipc_model_name = generate_file_name('ipc_model.pkl', id)
-                ipc_path = os.path.join(file_path, ipc_model_name)
-                self.ipc_model.save_model(ipc_path)
-            if self.apc_model:
-                apc_model_name = generate_file_name('apc_model.pkl', id)
-                apc_path = os.path.join(file_path, apc_model_name)
-                self.apc_model.save_model(apc_path)
-            if self.test_record.tree:
-                tree_structure_name = generate_file_name('tree.json', id)
-                tree_structure_path = os.path.join(file_path, tree_structure_name)
-                self.test_record.tree.save_tree(tree_structure_path)
-        elif mode == 'ipc':
-            if self.ipc_model:
-                ipc_model_name = generate_file_name('ipc_model.pkl', id)
-                ipc_path = os.path.join(file_path, ipc_model_name)
-                self.ipc_model.save_model(ipc_path)
-        elif mode == 'apc':
-            if self.apc_model:
-                apc_model_name = generate_file_name('apc_model.pkl', id)
-                apc_path = os.path.join(file_path, apc_model_name)
-                self.apc_model.save_model(apc_path)
-            if self.test_record.tree:
-                tree_structure_name = generate_file_name('tree.json', id)
-                tree_structure_path = os.path.join(file_path, tree_structure_name)
-                self.test_record.tree.save_tree(tree_structure_path)
 
 
 class Med3paExperiment:
@@ -329,18 +46,21 @@ class Med3paExperiment:
             samples_ratio_min: int = 0,
             samples_ratio_max: int = 50,
             samples_ratio_step: int = 5,
-            med3pa_metrics: List[str] = ['Accuracy', 'BalancedAccuracy', 'Precision', 'Recall', 'F1Score',
-                                         'Specificity', 'Sensitivity', 'Auc', 'LogLoss', 'Auprc', 'NPV', 'PPV', 'MCC'],
+            med3pa_metrics: List[str] = None,
             evaluate_models: bool = False,
             use_ref_models: bool = False,
             mode: str = 'mpc',
-            models_metrics: List[str] = ['MSE', 'RMSE', 'MAE']) -> Med3paResults:
+            models_metrics: List[str] = None) -> Med3paResults:
 
-        """Runs the MED3PA experiment on both reference and testing sets.
+        """
+        Runs the MED3PA experiment on both reference and testing sets.
+
         Args:
             datasets_manager (DatasetsManager): the datasets manager containing the dataset to use in the experiment.
-            base_model_manager (BaseModelManager, optional): Instance of BaseModelManager to get the base model, by default None.
-            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty, by default absolute_error.
+            base_model_manager (BaseModelManager, optional): Instance of BaseModelManager to get the base model,
+                by default None.
+            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty,
+                by default absolute_error.
             ipc_type (str, optional): The regressor model to use for IPC, by default RandomForestRegressor.
             ipc_params (dict, optional): Parameters for initializing the IPC regressor model, by default None.
             ipc_grid_params (dict, optional): Grid search parameters for optimizing the IPC model, by default None.
@@ -350,16 +70,27 @@ class Med3paExperiment:
             apc_grid_params (dict, optional): Grid search parameters for optimizing the APC model, by default None.
             apc_cv (int, optional): Number of cross-validation folds for optimizing the APC model, by default None.
             pretrained_apc (str, optional): path to a pretrained apc, by default None.
-            use_ref_models (bool, optional): whether or not to use the trained IPC and APC models from the reference set on the test set.
+            use_ref_models (bool, optional): whether or not to use the trained IPC and APC models from the reference set
+                on the test set.
             samples_ratio_min (int, optional): Minimum sample ratio, by default 0.
             samples_ratio_max (int, optional): Maximum sample ratio, by default 50.
             samples_ratio_step (int, optional): Step size for sample ratio, by default 5.
-            med3pa_metrics (list of str, optional): List of metrics to calculate, by default ['Auc', 'Accuracy', 'BalancedAccuracy'].
+            med3pa_metrics (list of str, optional): List of metrics to calculate, by default, multiple metrics included.
             evaluate_models (bool, optional): Whether to evaluate the models, by default False.
-            models_metrics (list of str, optional): List of metrics for model evaluation, by default ['MSE', 'RMSE'].
+            mode (str): The modality of dataset, either 'ipc', 'apc', or 'mpc'.
+            models_metrics (list of str, optional): List of metrics for model evaluation,
+                by default ['MSE', 'RMSE', 'MAE'].
+
         Returns:
             Med3paResults: the results of the MED3PA experiment on the reference set and testing set.
         """
+        if med3pa_metrics is None:
+            med3pa_metrics = ['Accuracy', 'BalancedAccuracy', 'Precision', 'Recall', 'F1Score',
+                              'Specificity', 'Sensitivity', 'Auc', 'LogLoss', 'Auprc', 'NPV', 'PPV', 'MCC']
+
+        if models_metrics is None:
+            models_metrics = ['MSE', 'RMSE', 'MAE']
+
         results_ref = None
         if datasets_manager.reference_set is not None:
             print("Running MED3pa Experiment on the reference set:")
@@ -449,7 +180,7 @@ class Med3paExperiment:
         experiment_config = {
             'experiment_name': "Med3paExperiment",
             'datasets': datasets_manager.get_info(),
-            'base_model': base_model_manager.get_instance().get_info(),
+            'base_model': base_model_manager.get_info() if base_model_manager is not None else None,
             'med3pa_params': med3pa_params
         }
         results.set_experiment_config(experiment_config)
@@ -475,19 +206,20 @@ class Med3paExperiment:
                     samples_ratio_min: int = 0,
                     samples_ratio_max: int = 50,
                     samples_ratio_step: int = 5,
-                    med3pa_metrics: List[str] = ['Accuracy', 'BalancedAccuracy', 'Precision', 'Recall', 'F1Score',
-                                                 'Specificity', 'Sensitivity', 'Auc', 'LogLoss', 'Auprc', 'NPV', 'PPV',
-                                                 'MCC'],
+                    med3pa_metrics: List[str] = None,
                     evaluate_models: bool = False,
                     mode: str = 'mpc',
-                    models_metrics: List[str] = ['MSE', 'RMSE', 'MAE']) -> Tuple[Med3paRecord, dict, dict]:
+                    models_metrics: List[str] = None) -> Tuple[Med3paRecord, dict, dict]:
 
         """
         Orchestrates the MED3PA experiment on one specific set of the dataset.
+
         Args:
             datasets_manager (DatasetsManager): the datasets manager containing the dataset to use in the experiment.
-            base_model_manager (BaseModelManager, optional): Instance of BaseModelManager to get the base model, by default None.
-            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty, by default absolute_error.
+            base_model_manager (BaseModelManager, optional): Instance of BaseModelManager to get the base model,
+                by default None.
+            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty,
+                by default absolute_error.
             ipc_type (str, optional): The regressor model to use for IPC, by default RandomForestRegressor.
             ipc_params (dict, optional): Parameters for initializing the IPC regressor model, by default None.
             ipc_grid_params (dict, optional): Grid search parameters for optimizing the IPC model, by default None.
@@ -498,15 +230,16 @@ class Med3paExperiment:
             samples_ratio_min (int, optional): Minimum sample ratio, by default 0.
             samples_ratio_max (int, optional): Maximum sample ratio, by default 50.
             samples_ratio_step (int, optional): Step size for sample ratio, by default 5.
-            med3pa_metrics (list of str, optional): List of metrics to calculate, by default ['Auc', 'Accuracy', 'BalancedAccuracy'].
+            med3pa_metrics (list of str, optional): List of metrics to calculate.
             evaluate_models (bool, optional): Whether to evaluate the models, by default False.
-            models_metrics (list of str, optional): List of metrics for model evaluation, by default ['MSE', 'RMSE'].
+            mode (str): The modality of dataset, either 'ipc', 'apc', or 'mpc'.
+            models_metrics (list of str, optional): List of metrics for model evaluation.
+
         Returns:
             Med3paRecord: the results of the MED3PA experiment.
         """
 
         # Step 1 : datasets and base model setting
-
         # Retrieve the dataset based on the set type
         if set == 'reference':
             dataset = datasets_manager.get_dataset_by_type(dataset_type="reference", return_instance=True)
@@ -520,16 +253,18 @@ class Med3paExperiment:
         y_true = dataset.get_true_labels()
         predicted_probabilities = dataset.get_pseudo_probabilities()
         features = datasets_manager.get_column_labels()
+        threshold = None
 
         # Initialize base model and predict probabilities if not provided
         if base_model_manager is None and predicted_probabilities is None:
             raise ValueError("Either the base model or the predicted probabilities should be provided!")
 
-        base_model = base_model_manager.get_instance()
         if predicted_probabilities is None:
-            predicted_probabilities = base_model.predict_proba(x)[:, 1]  # base_model.predict(x, True)
+            # base_model = base_model_manager.get_instance()
+            predicted_probabilities = base_model_manager.predict_proba(x)[:, 1]  # base_model.predict(x, True)
+            threshold = base_model_manager.threshold
 
-        dataset.set_pseudo_probs_labels(predicted_probabilities, base_model.threshold)
+        dataset.set_pseudo_probs_labels(predicted_probabilities, threshold)
 
         # Step 2 : Mode and metrics setup
         valid_modes = ['mpc', 'apc', 'ipc']

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Tuple, Type, Union
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+
 class DetectronComparison:
     """
     Class to compare the results of two Med3paExperiment instances.

@@ -14,6 +14,7 @@ class DataLoadingStrategy(ABC):
     """
     Abstract base class for data loading strategies. Defines a common interface for all data loading strategies.
     """
+    @staticmethod
     @abstractmethod
     def execute(path_to_file: str, target_column_name: str) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """

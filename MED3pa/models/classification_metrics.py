@@ -2,6 +2,7 @@
 The ``classification_metrics.py`` module defines the ``ClassificationEvaluationMetrics`` class, 
 that contains various classification metrics that can be used to assess the model's performance. 
 """
+from collections.abc import Callable
 from typing import List, Optional
 
 import numpy as np
@@ -93,7 +94,7 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
             return average_precision_score(y_true, y_prob, sample_weight=sample_weight)
 
     @staticmethod
-    def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, sample_weight: np.ndarray = None, **kwargs
+    def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, **kwargs
                           ) -> Optional[float]:
         """
         Calculate the Matthews correlation coefficient.
@@ -101,7 +102,6 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
         Args:
             y_true (np.ndarray): True labels.
             y_pred (np.ndarray): Predicted labels.
-            sample_weight (np.ndarray, optional): Sample weights.
 
         Returns:
             float: Matthews correlation coefficient.
@@ -237,7 +237,6 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
         Args:
             y_true (np.ndarray): True labels.
             y_pred (np.ndarray): Predicted labels.
-            sample_weight (np.ndarray, optional): Sample weights.
 
         Returns:
             float: Balanced accuracy score.
@@ -258,12 +257,13 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
 
         Args:
             y_true (np.ndarray): True labels.
-            y_pred (np.ndarray): Predicted probabilities.
+            y_prob (np.ndarray): Predicted probabilities.
             sample_weight (np.ndarray, optional): Sample weights.
 
         Returns:
             float: Log loss score.
         """
+        # return np.random.rand()
         if y_true.size == 0 or y_prob.size == 0 or len(np.unique(y_true)) == 1:
             return None
         y_pred = np.clip(y_prob, 1e-15, 1 - 1e-15)
@@ -272,15 +272,15 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
             return log_loss(y_true, y_pred, sample_weight=sample_weight)
 
     @classmethod
-    def get_metric(cls, metric_name: str = ''):
+    def get_metric(cls, metric_name: str = '') -> Callable | List[str]:
         """
         Get the metric function based on the metric name.
 
         Args:
             metric_name (str): The name of the metric.
 
-        Returns:
-            function: The function corresponding to the metric.
+        Returns: function: The function corresponding to the metric, if metric_name is not ''. Otherwise returns the
+        list of supported classification metrics.
         """
         metrics_mappings = {
             'Accuracy': cls.accuracy,

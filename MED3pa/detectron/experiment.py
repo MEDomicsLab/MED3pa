@@ -297,7 +297,7 @@ class DetectronExperiment:
         experiment_config = {
             'experiment_name': "DetectronExperiment",
             'datasets': datasets.get_info(),
-            'base_model': base_model_manager.get_instance().get_info(),
+            'base_model': base_model_manager.get_info(),
             'detectron_params': detectron_params
 
         }
