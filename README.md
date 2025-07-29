@@ -108,8 +108,8 @@ Ginsberg, T., Liang, Z., & Krishnan, R. G. (2023). [A Learning Based Hypothesis 
 ## Authors
 * [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomics-Udes laboratory.
 * [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomics-Udes laboratory.
-* [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at université de Sherbrooke
-* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Assistant professor, computer science department at université de Sherbrooke
+* [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at Université de Sherbrooke
+* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Assistant professor, computer science department at Université de Sherbrooke
 
 ## Statement
 
