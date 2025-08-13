@@ -101,7 +101,7 @@ class RegressionEvaluationMetrics(EvaluationMetric):
             'R2': cls.r2_score
         }
         if metric_name == '':
-            return list(metrics_mappings.keys())
+            return list(metrics_mappings)
         else:
             metric_function = metrics_mappings.get(metric_name)
             return metric_function

@@ -53,7 +53,7 @@ class RandomForestRegressorModel(RegressionModel):
         np_X_train, np_y_train = self._ensure_numpy_arrays(x_train, y_train)
 
         if training_parameters:
-            valid_param_sets = [set(self.model.get_params().keys())]
+            valid_param_sets = [set(self.model.get_params())]
             validated_params = self.validate_params(training_parameters, valid_param_sets)
             self.params.update(validated_params)
             self.model.set_params(**self.params)
@@ -290,7 +290,7 @@ class DecisionTreeRegressorModel(RegressionModel):
         np_X_train, np_y_train = self._ensure_numpy_arrays(x_train, y_train)
 
         if training_parameters:
-            valid_param_sets = [set(self.model.get_params().keys())]
+            valid_param_sets = [set(self.model.get_params())]
             validated_params = self.validate_params(training_parameters, valid_param_sets)
             self.params.update(validated_params)
             self.model.set_params(**self.params)

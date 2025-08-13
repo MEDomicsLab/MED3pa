@@ -298,12 +298,12 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
             'MCC': cls.matthews_corrcoef
         }
         if metric_name == '':
-            return list(metrics_mappings.keys())
+            return list(metrics_mappings)
         else:
             metric_function = metrics_mappings.get(metric_name)
             if metric_function is None:
                 raise ValueError(
-                    f"Metric '{metric_name}' is not recognized. Please choose from: {list(metrics_mappings.keys())}")
+                    f"Metric '{metric_name}' is not recognized. Please choose from: {list(metrics_mappings)}")
             return metric_function
 
     @classmethod

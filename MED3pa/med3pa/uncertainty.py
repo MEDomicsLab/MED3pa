@@ -90,7 +90,7 @@ class UncertaintyCalculator:
             metric_name (str): The name of the uncertainty metric to use for calculations.
         """
         if metric_name not in self.metric_mapping:
-            raise ValueError(f"Unrecognized metric name: {metric_name}. Available metrics: {list(self.metric_mapping.keys())}")
+            raise ValueError(f"Unrecognized metric name: {metric_name}. Available metrics: {list(self.metric_mapping)}")
         
         self.metric = self.metric_mapping[metric_name]
     
@@ -116,4 +116,4 @@ class UncertaintyCalculator:
         Returns:
             list: A list of strings representing the names of the supported uncertainty metrics.
         """
-        return list(cls.metric_mapping.keys())
+        return list(cls.metric_mapping)

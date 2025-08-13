@@ -57,7 +57,7 @@ class ModelFactory:
         Returns:
             list: A list containing the keys from model_mapping which represent the supported model types.
         """
-        return list(ModelFactory.model_mapping.keys())
+        return list(ModelFactory.model_mapping)
         
     @staticmethod
     def create_model_with_hyperparams(model_type: str, hyperparams: dict) -> Model:

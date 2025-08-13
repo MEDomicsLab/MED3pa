@@ -75,4 +75,4 @@ def supported_file_formats() -> List[str]:
     Returns:
         List[str]: A list of supported file formats.
     """
-    return list(DataLoadingContext.strategies.keys())
+    return list(DataLoadingContext.strategies)

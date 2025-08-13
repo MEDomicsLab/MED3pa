@@ -91,7 +91,7 @@ class IPCModel:
         Returns:
             list: A list of supported regression model names.
         """
-        return list(cls.supported_regressors_mapping.keys())
+        return list(cls.supported_regressors_mapping)
 
     @classmethod
     def supported_models_params(cls) -> Dict[str, Dict[str, Any]]:
