@@ -1,5 +1,5 @@
 """
-The manager.py module manages the different datasets needed for machine learning workflows, particularly for ``Detectron`` and ``Med3pa`` methods. 
+The manager.py module manages the different datasets needed for machine learning workflows, particularly for ``+tron`` and ``Med3pa`` methods.
 It includes the ``DatasetsManager`` class that contains the training, validation, reference, and testing datasets for a specific ML task.
 """
 
@@ -52,16 +52,18 @@ class DatasetsManager:
         dataset = MaskedDataset(obs_np, true_labels_np, column_labels=self.column_labels)
         dataset.set_file_path(file=file)
 
-        if dataset_type == 'training':
-            self.base_model_training_set = dataset
-        elif dataset_type == 'validation':
-            self.base_model_validation_set = dataset
-        elif dataset_type == 'reference':
-            self.reference_set = dataset
-        elif dataset_type == 'testing':
-            self.testing_set = dataset
-        else:
-            raise ValueError(f"Invalid dataset_type provided: {dataset_type}")
+        mapping = {
+            'training': 'base_model_training_set',
+            'validation': 'base_model_validation_set',
+            'reference': 'reference_set',
+            'testing': 'testing_set',
+        }
+
+        try:
+            setattr(self, mapping[dataset_type], dataset)
+        except KeyError:
+            raise ValueError(f"Invalid dataset_type provided: {dataset_type} \n"
+                             f"Available datasets are: {list(mapping)}")
 
     def set_from_data(self, dataset_type: str, observations: np.ndarray, true_labels: np.ndarray,
                       column_labels: Union[List, pd.Index] = None) -> None:
@@ -87,16 +89,17 @@ class DatasetsManager:
 
         dataset = MaskedDataset(observations, true_labels, column_labels=self.column_labels)
 
-        if dataset_type == 'training':
-            self.base_model_training_set = dataset
-        elif dataset_type == 'validation':
-            self.base_model_validation_set = dataset
-        elif dataset_type == 'reference':
-            self.reference_set = dataset
-        elif dataset_type == 'testing':
-            self.testing_set = dataset
-        else:
-            raise ValueError(f"Invalid dataset_type provided: {dataset_type}")
+        mapping = {
+            'training': 'base_model_training_set',
+            'validation': 'base_model_validation_set',
+            'reference': 'reference_set',
+            'testing': 'testing_set',
+        }
+
+        try:
+            setattr(self, mapping[dataset_type], dataset)
+        except KeyError:
+            raise ValueError(f"Invalid dataset_type provided: {dataset_type}, Available datasets are: {list(mapping)}")
 
     def set_column_labels(self, columns: list) -> None:
         """
@@ -111,18 +114,17 @@ class DatasetsManager:
 
         if self.column_labels is None:
             self.column_labels = columns
-        else:
-            if not np.array_equal(self.column_labels, columns):
-                raise ValueError("Provided column labels do not match the existing column labels.")
+        elif not np.array_equal(self.column_labels, columns):
+            raise ValueError("Provided column labels do not match the existing column labels.")
 
-        if self.base_model_training_set is not None:
-            self.base_model_training_set.column_labels = columns
-        if self.base_model_validation_set is not None:
-            self.base_model_validation_set.column_labels = columns
-        if self.reference_set is not None:
-            self.reference_set.column_labels = columns
-        if self.testing_set is not None:
-            self.testing_set.column_labels = columns
+        for dataset in (
+                self.base_model_training_set,
+                self.base_model_validation_set,
+                self.reference_set,
+                self.testing_set,
+        ):
+            if dataset is not None:
+                dataset.column_labels = columns
 
     def get_column_labels(self):
         """

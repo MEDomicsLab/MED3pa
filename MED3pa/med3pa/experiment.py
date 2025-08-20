@@ -212,7 +212,7 @@ class Med3paExperiment:
             datasets_manager (DatasetsManager): the datasets manager containing the dataset to use in the experiment.
             base_model_manager (BaseModelManager, optional): Instance of BaseModelManager to get the base model,
                 by default None.
-            uncertainty_metric (str, optional): the uncertainty metric ysed to calculate uncertainty,
+            uncertainty_metric (str, optional): the uncertainty metric used to calculate uncertainty,
                 by default absolute_error.
             ipc_type (str, optional): The regressor model to use for IPC, by default RandomForestRegressor.
             ipc_params (dict, optional): Parameters for initializing the IPC regressor model, by default None.
@@ -256,8 +256,7 @@ class Med3paExperiment:
             raise ValueError("Either the base model or the predicted probabilities should be provided!")
 
         if predicted_probabilities is None:
-            # base_model = base_model_manager.get_instance()
-            predicted_probabilities = base_model_manager.predict_proba(x)[:, 1]  # base_model.predict(x, True)
+            predicted_probabilities = base_model_manager.predict_proba(x)[:, 1]
             threshold = base_model_manager.threshold
 
         dataset.set_pseudo_probs_labels(predicted_probabilities, threshold)
@@ -300,13 +299,14 @@ class Med3paExperiment:
         if pretrained_ipc is None and ipc_instance is None:
             IPC_model = IPCModel(model_name=ipc_type, params=ipc_params, pretrained_model=None)
             if ipc_type == 'EnsembleRandomForestRegressor':
+                # Add class weight correction to train the EnsembleRandomForestRegressor
                 class_1_prop = np.sum(y_ipc) / len(y_ipc)
                 sample_weight = np.where(y_ipc == 0, 1 / (1 - class_1_prop), 1 / class_1_prop)
                 IPC_model.train(x_ipc, uncertainty_ipc, sample_weight=sample_weight)
             else:
                 IPC_model.train(x_ipc, uncertainty_ipc)
             print("IPC Model training complete.")
-            # optimize IPC model if grid params were provided
+            # Optimize IPC model if grid params were provided
             if ipc_grid_params is not None:
                 if len(uncertainty_values) > 4:
                     # No optimization if 4 or less samples

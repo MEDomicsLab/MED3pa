@@ -1,5 +1,5 @@
 """
-This module is crucial for data handling, utilizing the **Strategy design pattern** and therefor offering multiple strategies to transform raw data into formats that enhance model training and evaluation.
+This module is crucial for data handling, utilizing the **Strategy design pattern** and therefore offering multiple strategies to transform raw data into formats that enhance model training and evaluation.
 According to the model type.
 """
 

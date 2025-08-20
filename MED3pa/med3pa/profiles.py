@@ -152,7 +152,7 @@ class ProfilesManager:
         
         Args:
             profiles_list (List[dict]): List of profiles data.
-            to_dict (bool, optional): If True, transforms profiles to dictionaries. Defaults to True.
+            to_dict (bool, optional): If True, transforms profiles to dictionaries. Defaults to False.
 
         Returns:
             List[Union[dict, Profile]]: List of transformed profiles.

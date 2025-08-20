@@ -169,9 +169,10 @@ class XGBoostModel(ClassificationModel):
         return preds
 
     def train_to_disagree(self, x_train: np.ndarray, y_train: np.ndarray,
+                          x_validation: np.ndarray, y_validation: np.ndarray,
                           x_test: np.ndarray, y_test: np.ndarray, 
                           training_parameters: Optional[Dict[str, Any]], 
-                          balance_train_classes: bool, N: int) -> None:
+                          balance_train_classes: bool, n_samples: int) -> None:
         """
         Trains the model to disagree with another model using a specified dataset.
 
@@ -187,7 +188,7 @@ class XGBoostModel(ClassificationModel):
             y_test (np.ndarray): Labels for testing or disagreement evaluation.
             training_parameters (Optional[Dict[str, Any]]): Additional parameters for training the model.
             balance_train_classes (bool): Whether to balance the class distribution in the training data.
-            N (int): The number of examples in the testing set that should be used for calculating disagreement.
+            n_samples (int): The number of examples in the testing set that should be used for calculating disagreement.
 
         Raises:
             ValueError: If the necessary parameters for training are not properly initialized.
@@ -214,7 +215,7 @@ class XGBoostModel(ClassificationModel):
         # prepare the data for training
         data = np.concatenate([x_train, x_test])
         label = np.concatenate([y_train, 1 - y_test])
-        weight = np.concatenate([training_weights, 1 / (N + 1) * np.ones(N)])
+        weight = np.concatenate([training_weights, 1 / (n_samples + 1) * np.ones(n_samples)])
 
         if self.model_class is xgb.Booster:
             dtrain = self._ensure_dmatrix(data, label, weight)

@@ -92,15 +92,17 @@ class EnsembleRandomForestRegressorModel(RegressionModel):
     def __init__(self, params: Dict[str, Any] = None,
                  base_model: RandomForestRegressorModel = RandomForestRegressorModel,
                  n_models: int = 10,
-                 random_state: int = None, **params_sklearn) -> None:
+                 random_state: int = None,
+                 **params_sklearn) -> None:
         """
         Initializes the EnsembleRandomForestRegressorModel with multiple RandomForestRegressor models.
 
         Args:
+            params (Dict[str, Any]): A dictionary of parameters for each model in the ensemble.
             base_model (RandomForestRegressorModel): A prototype instance of RandomForestRegressorModel.
             n_models (int): The number of RandomForestRegressorModel instances in the ensemble.
-            params (Dict[str, Any]): A list of parameter dictionaries for each model in the ensemble.
-            random_state (int): A random_state can be set for reproducibility
+            random_state (int): A random_state can be set for reproducibility.
+            **params_sklearn (Any) : Parameters for the sklearn model.
         """
         if params is None:
             params = {}
@@ -173,12 +175,6 @@ class EnsembleRandomForestRegressorModel(RegressionModel):
         Trains each model in the ensemble on a differently resampled dataset.
         """
         np_X_train, np_y_train = self._ensure_numpy_arrays(x_train, y_train)
-
-        # if params is not None:
-        #     if training_parameters is None:
-        #         training_parameters = params
-        #     else:
-        #         training_parameters.update(params)
 
         if training_parameters:
             self.params.update(training_parameters)

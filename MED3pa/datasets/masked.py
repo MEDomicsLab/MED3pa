@@ -93,12 +93,12 @@ class MaskedDataset(Dataset):
         """Resets the indices of the dataset to the original indices."""
         self.__indices = self.__original_indices.copy()
 
-    def sample_uniform(self, N: int, seed: int) -> 'MaskedDataset':
+    def sample_uniform(self, n_samples: int, seed: int) -> 'MaskedDataset':
         """
         Samples N data points from the dataset, prioritizing the least sampled points.
 
         Args:
-            N (int): The number of samples to return.
+            n_samples (int): The number of samples to return.
             seed (int): The seed for random number generator.
         
         Returns:
@@ -107,19 +107,19 @@ class MaskedDataset(Dataset):
         Raises:
             ValueError: If N is greater than the current number of data points in the dataset.
         """
-        if N > len(self.__observations):
+        if n_samples > len(self.__observations):
             raise ValueError("N cannot be greater than the current number of data points in the dataset.")
         
         # Find the indices of the least sampled points
         sorted_indices = np.argsort(self.__sample_counts)
-        least_sampled_indices = sorted_indices[:N]
+        least_sampled_indices = sorted_indices[:n_samples]
         
         # Set the seed for reproducibility and shuffle the least sampled indices
         np.random.seed(seed)
         np.random.shuffle(least_sampled_indices)
         
         # Select the first N after shuffling
-        sampled_indices = least_sampled_indices[:N]
+        sampled_indices = least_sampled_indices[:n_samples]
         # Update the sample counts for the sampled indices
         self.__sample_counts[sampled_indices] += 1
 
@@ -128,12 +128,12 @@ class MaskedDataset(Dataset):
 
         return sampled_set
     
-    def sample_random(self, N: int, seed: int) -> 'MaskedDataset':
+    def sample_random(self, n_samples: int, seed: int) -> 'MaskedDataset':
         """
         Samples N data points randomly from the dataset using the given seed.
 
         Args:
-            N (int): The number of samples to return.
+            n_samples (int): The number of samples to return.
             seed (int): The seed for random number generator.
 
         Returns:
@@ -142,12 +142,12 @@ class MaskedDataset(Dataset):
         Raises:
             ValueError: If N is greater than the current number of data points in the dataset.
         """
-        if N > len(self.__observations):
+        if n_samples > len(self.__observations):
             raise ValueError("N cannot be greater than the current number of data points in the dataset.")
 
         # Set the seed for reproducibility and generate random indices
         rng = np.random.RandomState(seed)
-        random_indices = rng.permutation(len(self.__observations))[:N]
+        random_indices = rng.permutation(len(self.__observations))[:n_samples]
 
         # Extract the sampled observations and labels
         sampled_set = self.__sample_indices(random_indices)
@@ -382,36 +382,3 @@ class MaskedDataset(Dataset):
         """
         df = self.to_dataframe()
         df.to_csv(file_path, index=False)
-
-    def combine(self, other: 'MaskedDataset') -> 'MaskedDataset':
-        """
-        Combines the current MaskedDataset with another MaskedDataset.
-
-        Args:
-            other (MaskedDataset): The other MaskedDataset to combine with.
-        
-        Returns:
-            MaskedDataset: A new instance of MaskedDataset containing the combined data.
-
-        Raises:
-            ValueError: If the column labels of the two datasets do not match.
-        """
-        if self.__column_labels != other.__column_labels:
-            raise ValueError("The column labels of the two datasets must match to combine them.")
-
-        combined_observations = np.vstack((self.__observations, other.__observations))
-        combined_true_labels = np.concatenate((self.__true_labels, other.__true_labels))
-        combined_pseudo_labels = np.concatenate((self.__pseudo_labels, other.__pseudo_labels)) if self.__pseudo_labels is not None and other.__pseudo_labels is not None else None
-        combined_pseudo_probabilities = np.concatenate((self.__pseudo_probabilities, other.__pseudo_probabilities)) if self.__pseudo_probabilities is not None and other.__pseudo_probabilities is not None else None
-        combined_confidence_scores = np.concatenate((self.__confidence_scores, other.__confidence_scores)) if self.__confidence_scores is not None and other.__confidence_scores is not None else None
-
-        combined_dataset = MaskedDataset(
-            observations=combined_observations,
-            true_labels=combined_true_labels,
-            column_labels=self.__column_labels
-        )
-        combined_dataset.set_pseudo_labels(combined_pseudo_labels) if combined_pseudo_labels is not None else None
-        combined_dataset.set_pseudo_probs_labels(combined_pseudo_probabilities) if combined_pseudo_probabilities is not None else None
-        combined_dataset.set_confidence_scores(combined_confidence_scores) if combined_confidence_scores is not None else None
-
-        return combined_dataset

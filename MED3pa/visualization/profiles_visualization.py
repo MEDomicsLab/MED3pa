@@ -90,8 +90,8 @@ def _generate_tree_html(result: Med3paResults, samp_ratio: int, dr: int, data_se
 
     Args:
         result (Med3paResults): The results of the experiment to visualize.
-        dr (int): Declaration rate of predictions for the visualization.
         samp_ratio (int): The minimum samples ratio in each profile (in percentage).
+        dr (int): Declaration rate of predictions for the visualization.
         data_set (str): The name of the data set to visualize. Defaults to 'test', options are 'train', 'valid', 'test'.
         metrics_list (List | None): The list of metrics to visualize. Defaults to None, meaning no metrics are shown.
         max_depth (int): Maximum profile depth.
