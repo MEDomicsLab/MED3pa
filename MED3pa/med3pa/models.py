@@ -25,12 +25,7 @@ class AbstractUncertaintyEstimator:
 
     supported_regressors_mapping = {
         'RandomForestRegressor': RandomForestRegressorModel,
-        'EnsembleRandomForestRegressor': EnsembleRandomForestRegressorModel
-    }
-
-    underlying_models_mapping = {
-        'RandomForestRegressor': RandomForestRegressor,
-        'EnsembleRandomForestRegressor': RandomForestRegressor,
+        'EnsembleRandomForestRegressor': EnsembleRandomForestRegressorModel,
         'DecisionTreeRegressor': DecisionTreeRegressorModel
     }
 
@@ -130,10 +125,10 @@ class AbstractUncertaintyEstimator:
         with open(file_path, 'rb') as file:
             loaded_model = pickle.load(file)
 
-        if not isinstance(loaded_model, self.underlying_models_mapping[self.model_name]):
+        if not isinstance(loaded_model, self.supported_regressors_mapping[self.model_name]):
             raise TypeError(f"The loaded model type does not match the specified model type: {self.model_name}")
 
-        self.model.model = loaded_model
+        self.model = loaded_model
         self.pretrained = True
 
 
