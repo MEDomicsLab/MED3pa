@@ -7,7 +7,6 @@
 - [Getting Started with the Package](#getting-started)
     - [Installation](#installation)
     - [A Simple Example](#a-simple-example)
-- [Tutorials](#tutorials)
 - [Acknowledgement](#acknowledgement)
 - [References](#references)
 - [Authors](#authors)
@@ -22,9 +21,9 @@ The **MED3pa** package is specifically designed to address critical challenges i
 
 ## Key Functionalities
 
-- **Uncertainty and Confidence Estimation**: Through the MED3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
+- ** Model Confidence Estimation**: Through the MED3pa subpackage, the package measures the predictive confidence at both individual and group (profile) levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
-- **Identification of Problematic Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
+- **Identification of Problematic Profiles**: MED3pa analyzes data profiles for whom the BaseModel consistently leads to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
 
 ## Subpackages
 
@@ -51,30 +50,54 @@ pip install MED3pa
 ```
 
 ### A simple exemple
-
+We have created a [simple example](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples) of using the MED3pa package. 
+[See the full example here](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples/oym_example.ipynb)
 ```python
-   
-    # TBD
+from MED3pa.datasets import DatasetsManager
+from MED3pa.med3pa import Med3paExperiment
+from MED3pa.models import BaseModelManager
+from MED3pa.visualization.mdr_visualization import visualize_mdr
+from MED3pa.visualization.profiles_visualization import visualize_tree
+
+...
+
+# Initialize the DatasetsManager
+datasets = DatasetsManager()
+datasets.set_from_data(dataset_type="testing",
+                       observations=x_evaluation.to_numpy(),
+                       true_labels=y_evaluation,
+                       column_labels=x_evaluation.columns)
+# Initialize the BaseModelManager
+base_model_manager = BaseModelManager(model=clf)
+
+# Execute the MED3PA experiment
+results = Med3paExperiment.run(
+    datasets_manager=datasets,
+    base_model_manager=base_model_manager,
+    **med3pa_params
+)
+
+# Save the results to a specified directory
+results.save(file_path='results/oym')
+
+# Visualize results
+visualize_mdr(result=results, filename='results/oym/mdr')
+visualize_tree(result=results, filename='results/oym/profiles')
 
 ```
 
-### Tutorials
-
-We have created many [tutorial notebooks](https://github.com/lyna1404/MED3pa/tree/main/tutorials) to assist you in learning how to use the different parts of the package.
-
-
 ## Acknowledgement
-MED3pa is an open-source package developed at the [MEDomics-Udes](https://www.medomics-udes.org/en/) laboratory with the collaboration of the international consortium [MEDomics](https://www.medomics.ai/). We welcome any contribution and feedback. 
+MED3pa is an open-source package developed at the [MEDomicsLab](https://www.medomicslab.com/) laboratory. We welcome any contribution and feedback. 
 
 ## Authors
 * [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at Université de Sherbrooke
 * [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomics-Udes laboratory.
 * [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomics-Udes laboratory.
-* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Assistant professor, computer science department at Université de Sherbrooke
+* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Associate professor, Department of Oncology at McGill University
 
 ## Statement
 
-This package is part of https://github.com/medomics, a package providing research utility tools for developing precision medicine applications.
+This package is part of https://www.medomics.ai/, a package providing research utility tools for developing precision medicine applications.
 
 ```
 Copyright (C) 2024 MEDomics consortium
@@ -94,7 +117,7 @@ Here's what the license entails:
 9. The software author or license can not be held liable for any damages inflicted by the software.
 ```
 
-More information on about the [LICENSE can be found here](https://github.com/MEDomics-UdeS/MEDimage/blob/main/LICENSE.md)
+More information about the [LICENSE can be found here](https://github.com/MEDomics-UdeS/MEDimage/blob/main/LICENSE.md)
 
 ## Supported Python Versions
 
