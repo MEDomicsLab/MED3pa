@@ -3,6 +3,7 @@ The mdr_visualization.py module manages visualization methods for the Metrics by
 """
 
 import matplotlib.pyplot as plt
+import os
 from typing import List, Optional
 
 from MED3pa.med3pa.results import Med3paResults
@@ -56,6 +57,8 @@ def visualize_mdr(result: Med3paResults, filename: str = 'mdr', linewidth: int =
     plt.title("Metrics vs Declaration Rate")
     plt.grid(True, linestyle='--', alpha=0.7, linewidth=2)
     if save:
+        # Create the directory if it doesn't exist
+        os.makedirs(filename, exist_ok=True)
         plt.savefig(f"{filename}.{save_format}", format=save_format)
     if show:
         plt.show()

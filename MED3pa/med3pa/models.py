@@ -63,7 +63,7 @@ class AbstractUncertaintyEstimator:
         elif 'random_state' not in params:
             params['random_state'] = self.default_params['random_state']
 
-        self.model = model_class(**params)
+        self.model = model_class(params)
         self.params = params
         self.grid_search_params = {}
         self.optimized = False
