@@ -13,7 +13,7 @@ from .masked import MaskedDataset
 
 class DatasetsManager:
     """
-    Manages various datasets for execution of detectron and med3pa methods.
+    Manages various datasets for execution of med3pa methods.
 
     This manager is responsible for loading and holding different sets of data, including training, validation,
     reference (or domain dataset), and testing datasets (or new encountered data).

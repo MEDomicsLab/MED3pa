@@ -1,6 +1,6 @@
 Working with the med3pa Subpackage
 ----------------------------------
-This tutorial guides you through the process of setting up and running comprehensive experiments using the ``med3pa`` subpackage. It includes steps to execute MED3pa experiment with ``Med3paExperiment`` and  the combination of MED3pa and Detectron using ``Med3paDetectronExperiment``.
+This tutorial guides you through the process of setting up and running comprehensive experiments using the ``med3pa`` subpackage. It includes steps to execute MED3pa experiment with ``Med3paExperiment``.
 
 Running the MED3pa Experiment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,12 +161,6 @@ If you don't want to re-train new APC and IPC models in your experiment, you can
     results.save(file_path='./med3pa_experiment_results_pretrained')
     results2.save(file_path='./med3pa_experiment_results_2_pretrained')
 
-Step 6: Comparing two experiments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-You can compare between two experiments bu using the ``Med3paComparaison`` class, this class works as follows:
-- the two experiments need to be of the same type, either ``Med3paExperiment`` or ``Med3paDetectronExperiment``.
-- if the two experiments were executed using the same tree structure, or the same apc/ipc models, the profiles will also be compared.
-- if the experiments are of type ``Med3paDetectronExperiment``, the detectron results will be also compared.
 
 .. code-block:: python
 
@@ -176,37 +170,3 @@ You can compare between two experiments bu using the ``Med3paComparaison`` class
     comparaison.compare_experiments()
     comparaison.save('./med3pa_comparaison_results')
     
-Running the MED3pa and Detectron Experiment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-You can also run an experiment that combines the forces of Detectron in covariate shift detection with MED3pa problematic profiles extraction using the `Med3paDetectronExperiment` class. To be able to run this experiment, all datasets of the `DatasetsManager` should be set, alongside the ``BaseModelManager``. This experiment will run MED3pa experiment on the `testing` and `reference` sets and then run the `detectron` experiment on the `testing` set as a whole, and then on the **extracted profiles** from MED3pa:
-
-.. code-block:: python
-
-    from MED3pa.med3pa import Med3paDetectronExperiment
-    from MED3pa.detectron.strategies import EnhancedDisagreementStrategy
-
-    # Execute the integrated MED3PA and Detectron experiment
-    med3pa_results, detectron_results = Med3paDetectronExperiment.run(
-        datasets=datasets,
-        base_model_manager=base_model_manager,
-        uncertainty_metric="absolute_error",
-        samples_size=20,
-        ensemble_size=10,
-        num_calibration_runs=100,
-        patience=3,
-        test_strategies=EnhancedDisagreementStrategy,
-        allow_margin=False,
-        margin=0.05,
-        ipc_params=ipc_params,
-        apc_params=apc_params,
-        samples_ratio_min=0,
-        samples_ratio_max=50,
-        samples_ratio_step=5,
-        med3pa_metrics=med3pa_metrics,
-        evaluate_models=True,
-        models_metrics=['MSE', 'RMSE']
-    )
-
-    # Save the results to a specified directory
-    med3pa_results.save(file_path='./med3pa_detectron_experiment_results/')
-    detectron_results.save(file_path='./med3pa_detectron_experiment_results/detectron')

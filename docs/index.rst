@@ -8,7 +8,7 @@ Welcome to MED3pa documentation!
 
 Overview
 ========
-.. image:: ./diagrams/package.svg
+.. image:: ./diagrams/package_white_bg.svg
    :alt: UML package diagram
    :align: center
    :width: 100%
@@ -25,8 +25,6 @@ It provides comprehensive tools for evaluating model stability and performance i
 Key functionalities
 -------------------
 
-- **Covariate Shift Detection:** Utilizing the detectron subpackage, MED3pa can identify significant shifts in data distributions that might affect the model’s predictions. This feature is crucial for applications such as healthcare, where early detection of shifts can prevent erroneous decisions.
-
 - **Uncertainty and Confidence Estimation:** Through the med3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
 - **Identification of Problematic Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
@@ -35,7 +33,7 @@ Software Engineering Principles
 -------------------------------
 The ``MED3pa`` package is constructed with a strong emphasis on **software engineering principles**, making it a robust and scalable solution for machine learning model evaluation:
 
-- **Modular Design**: The package is structured into four distinct **subpackages** (detectron, med3pa, models, and datasets), each focusing on different aspects of model training and evaluation. This modularity allows users to easily integrate and utilize specific functionalities tailored to their needs without dealing with unnecessary complexities.
+- **Modular Design**: The package is structured into three distinct **subpackages** (med3pa, models, and datasets), each focusing on different aspects of model training and evaluation. This modularity allows users to easily integrate and utilize specific functionalities tailored to their needs without dealing with unnecessary complexities.
 - **Extensibility**: Thanks to its modular architecture, the package can be effortlessly extended to include more functionalities or adapt to different use cases. New models, methods, or data handling procedures can be added with minimal impact on the existing system structure.
 - **Use of Design Patterns**: MED3pa employs various design patterns that enhance its maintainability and usability. For example, the use of factory patterns in model creation and strategy patterns in handling different file extensions ensures that the system remains flexible and adaptable to new requirements.
 
@@ -47,7 +45,7 @@ The ``MED3pa`` package is constructed with a strong emphasis on **software engin
 
 Subpackages
 ============
-The package is structured into four distinct subpackages : ``datasets``, ``models``, ``detectron`` and ``med3pa``, each focusing on different aspects of the package goals. 
+The package is structured into three distinct subpackages : ``datasets``, ``models`` and ``med3pa``, each focusing on different aspects of the package goals.
 This modularity allows users to easily integrate and utilize specific functionalities tailored to their needs without dealing with unnecessary complexities.
 
 .. image:: ./diagrams/subpackages.svg

@@ -200,8 +200,7 @@ Get the confidence scores if available:
 
 **Converting to DataFrame and Saving to CSV**
 
-### Saving the dataset
-You can save the dataset as a .csv file, but using `save_to_csv` and providing the path this will save the observations, true_labels, pseudo_labels and pseudo_probabilities, alongside confidence_scores if they were set:
+You can save the dataset as a .csv file. Using `save_to_csv` and providing the path this will save the observations, true_labels, pseudo_labels and pseudo_probabilities, alongside confidence_scores if they were set:
 
 .. code-block:: python
 
