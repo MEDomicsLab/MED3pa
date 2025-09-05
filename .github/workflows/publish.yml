@@ -1,0 +1,63 @@
+name: Upload Python Package to PyPI and Deploy Documentation to Read the Docs
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  pypi-publish:
+    name: Publish release to PyPI and Deploy Documentation
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+
+      - name: Install Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+
+      - name: Initialize Conda
+        run: |
+          conda init bash
+        shell: bash
+
+      - name: Create Conda environment
+        run: |
+          conda env create -f environment.yaml
+
+      - name: Activate Conda environment
+        run: |
+          source ~/.bashrc
+          conda activate MED3pa
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel setuptools-scm sphinx sphinx_rtd_theme
+
+      - name: Clean dist directory
+        run: |
+          rm -rf dist/
+      
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel  # Could also be python -m build
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+          skip-existing: true
+      
