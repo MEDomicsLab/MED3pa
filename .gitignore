@@ -29,4 +29,6 @@ dist/
 build/
 
 experiments/
-proofs/
+
+*.MED3paResults
+*.csv

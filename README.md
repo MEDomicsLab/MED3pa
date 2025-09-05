@@ -7,7 +7,6 @@
 - [Getting Started with the Package](#getting-started)
     - [Installation](#installation)
     - [A Simple Example](#a-simple-example)
-- [Tutorials](#tutorials)
 - [Acknowledgement](#acknowledgement)
 - [References](#references)
 - [Authors](#authors)
@@ -16,29 +15,26 @@
 
 ## Overview
 
-<img src="https://github.com/lyna1404/MED3pa/blob/main/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
+<img src="https://github.com/MEDomics-UdeS/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
 
 The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, particularly focusing on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of **covariate shifts**, **uncertainty**, and **problematic data profiles**.
 
 ## Key Functionalities
 
-- **Covariate Shift Detection**: Utilizing the Detectron subpackage, MED3pa can identify significant shifts in data distributions that might affect the model’s predictions. This feature is crucial for applications such as healthcare, where early detection of shifts can prevent erroneous decisions.
+- ** Model Confidence Estimation**: Through the MED3pa subpackage, the package measures the predictive confidence at both individual and group (profile) levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
-- **Uncertainty and Confidence Estimation**: Through the med3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
-
-- **Identification of Problematic Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
+- **Identification of Problematic Profiles**: MED3pa analyzes data profiles for whom the BaseModel consistently leads to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
 
 ## Subpackages
 
 <p align="center">
-    <img src="https://github.com/lyna1404/MED3pa/blob/main/docs/diagrams/subpackages.svg" alt="Overview">
+    <img src="https://github.com/MEDomics-UdeS/MED3pa/blob/review/docs/diagrams/subpackages.svg" alt="Overview">
 </p>
 
 The package is structured into four distinct subpackages:
 
 - **datasets**: Stores and manages the dataset.
 - **models**: Handles ML models operations.
-- **detectron**: Evaluates the model against covariate shift.
 - **med3pa**: Evaluates the model’s performance & extracts problematic profiles.
 
 This modularity allows users to easily integrate and utilize specific functionalities tailored to their needs without dealing with unnecessary complexities.
@@ -54,71 +50,59 @@ pip install MED3pa
 ```
 
 ### A simple exemple
-
+We have created a [simple example](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples) of using the MED3pa package. 
+[See the full example here](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples/oym_example.ipynb)
 ```python
-   
-    from MED3pa.datasets import DatasetsManager
-    from MED3pa.models import BaseModelManager, ModelFactory
-    from MED3pa.med3pa import Med3paDetectronExperiment
-    
-    # Initialize the DatasetsManager
-    datasets = DatasetsManager()
+from MED3pa.datasets import DatasetsManager
+from MED3pa.med3pa import Med3paExperiment
+from MED3pa.models import BaseModelManager
+from MED3pa.visualization.mdr_visualization import visualize_mdr
+from MED3pa.visualization.profiles_visualization import visualize_tree
 
-    # Load datasets for training, validation, reference, and testing
-    datasets.set_from_file(dataset_type="training", file='./tutorials/data/train_data.csv', target_column_name='Outcome')
-    datasets.set_from_file(dataset_type="validation", file='./tutorials/data/val_data.csv', target_column_name='Outcome')
-    datasets.set_from_file(dataset_type="reference", file='./tutorials/data/test_data.csv', target_column_name='Outcome')
-    datasets.set_from_file(dataset_type="testing", file='./tutorials/data/test_data_shifted_0.6.csv', target_column_name='Outcome')
+...
 
+# Initialize the DatasetsManager
+datasets = DatasetsManager()
+datasets.set_from_data(dataset_type="testing",
+                       observations=x_evaluation.to_numpy(),
+                       true_labels=y_evaluation,
+                       column_labels=x_evaluation.columns)
+# Initialize the BaseModelManager
+base_model_manager = BaseModelManager(model=clf)
 
-    # Initialize the model factory and load the pre-trained model
-    factory = ModelFactory()
-    model = factory.create_model_from_pickled("./tutorials/models/diabetes_xgb_model.pkl")
+# Execute the MED3PA experiment
+results = Med3paExperiment.run(
+    datasets_manager=datasets,
+    base_model_manager=base_model_manager,
+    **med3pa_params
+)
 
-    # Set the base model using BaseModelManager
-    base_model_manager = BaseModelManager()
-    base_model_manager.set_base_model(model=model)
+# Save the results to a specified directory
+results.save(file_path='results/oym')
 
-    # Execute the integrated MED3PA and Detectron experiment
-    reference_results, test_results, detectron_results = Med3paDetectronExperiment.run(
-        datasets=datasets,
-        base_model_manager=base_model_manager,
-    )
-
-    # Save the results to a specified directory
-    reference_det_results.save(file_path='./tutorials/med3pa_detectron_experiment_results/reference')
-    test_det_results.save(file_path='./tutorials/med3pa_detectron_experiment_results/test')
-    detectron_results.save(file_path='./tutorials/med3pa_detectron_experiment_results/detectron')
+# Visualize results
+visualize_mdr(result=results, filename='results/oym/mdr')
+visualize_tree(result=results, filename='results/oym/profiles')
 
 ```
 
-### Tutorials
-
-We have created many [tutorial notebooks](https://github.com/lyna1404/MED3pa/tree/main/tutorials) to assist you in learning how to use the different parts of the package.
-
-
 ## Acknowledgement
-MED3pa is an open-source package developed at the [MEDomics-Udes](https://www.medomics-udes.org/en/) laboratory with the collaboration of the international consortium [MEDomics](https://www.medomics.ai/). We welcome any contribution and feedback. 
-
-## References
-This package utilizes the methods described in the following work:
-
-Ginsberg, T., Liang, Z., & Krishnan, R. G. (2023). [A Learning Based Hypothesis Test for Harmful Covariate Shift](https://openreview.net/forum?id=rdfgqiwz7lZ). In *The Eleventh International Conference on Learning Representations*.
+MED3pa is an open-source package developed at the [MEDomicsLab](https://www.medomicslab.com/) laboratory. We welcome any contribution and feedback. 
 
 ## Authors
+* [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at Université de Sherbrooke
 * [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomics-Udes laboratory.
 * [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomics-Udes laboratory.
-* [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at université de Sherbrooke
-* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Assistant professor, computer science department at université de Sherbrooke
+* [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Associate professor, Department of Oncology at McGill University
 
 ## Statement
 
-This package is part of https://github.com/medomics, a package providing research utility tools for developing precision medicine applications.
+This package is part of https://www.medomics.ai/, a package providing research utility tools for developing precision medicine applications.
 
 ```
 Copyright (C) 2024 MEDomics consortium
 
-GPL3 LICENSE SYNOPSIS
+GPLV3 LICENSE SYNOPSIS
 
 Here's what the license entails:
 
@@ -133,7 +117,7 @@ Here's what the license entails:
 9. The software author or license can not be held liable for any damages inflicted by the software.
 ```
 
-More information on about the [LICENSE can be found here](https://github.com/MEDomics-UdeS/MEDimage/blob/main/LICENSE.md)
+More information about the [LICENSE can be found here](https://github.com/MEDomics-UdeS/MEDimage/blob/main/LICENSE.md)
 
 ## Supported Python Versions
 

@@ -3,15 +3,13 @@ This module offers concrete implementations of specific classification models, s
 It adapts the abstract interfaces defined in ``abstract_models.py`` to provide fully functional models ready for training and prediction.
 """
 
-from typing import Any, Dict, List, Optional, Union
-
 import numpy as np
 import xgboost as xgb
+from typing import Any, Dict, Optional, Union
 
-from .abstract_models import ClassificationModel
-from .classification_metrics import *
-from .data_strategies import ToDmatrixStrategy
-from .xgboost_params import valid_xgboost_custom_params, valid_xgboost_params, xgboost_metrics
+from MED3pa.models.abstract_models import ClassificationModel
+from MED3pa.models.data_strategies import ToDmatrixStrategy
+from MED3pa.models.xgboost_params import valid_xgboost_custom_params, valid_xgboost_params
 
 
 class XGBoostModel(ClassificationModel):
@@ -19,7 +17,8 @@ class XGBoostModel(ClassificationModel):
     A concrete implementation of the ClassificationModel class for XGBoost models.
     This class provides functionalities to train, predict, and evaluate models built with the XGBoost library.
     """
-    def __init__(self, params: Optional[Dict[str, Any]] = None, model: Optional[Union[xgb.Booster, xgb.XGBClassifier]] = None) -> None:
+    def __init__(self, params: Optional[Dict[str, Any]] = None,
+                 model: Optional[Union[xgb.Booster, xgb.XGBClassifier]] = None) -> None:
         """
         Initializes the XGBoostModel either with parameters for a new model or a loaded pickled model.
 
@@ -55,7 +54,8 @@ class XGBoostModel(ClassificationModel):
         else:
             return features
 
-    def train(self, x_train: np.ndarray, y_train: np.ndarray, x_validation: np.ndarray, y_validation: np.ndarray, training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool) -> None:
+    def train(self, x_train: np.ndarray, y_train: np.ndarray, x_validation: np.ndarray, y_validation: np.ndarray,
+              training_parameters: Optional[Dict[str, Any]], balance_train_classes: bool) -> None:
         """
         Trains the model on the provided dataset.
 
@@ -141,11 +141,38 @@ class XGBoostModel(ClassificationModel):
 
         return preds if return_proba else (preds > threshold).astype(int)
 
-    def train_to_disagree(self, x_train: np.ndarray, y_train: np.ndarray, 
-                          x_validation: np.ndarray, y_validation: np.ndarray, 
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """
+                Makes predictions using the model for the given input.
+
+                Args:
+                    X (np.ndarray): Features for prediction.
+
+                Returns:
+                    np.ndarray: Predictions made by the model.
+
+                Raises:
+                    ValueError: If the model has not been initialized.
+                    NotImplementedError: If prediction is not implemented for the model class.
+                """
+        if self.model is None:
+            raise ValueError(f"The {self.model_class.__name__} model has not been initialized.")
+
+        if self.model_class is xgb.Booster:
+            dtest = self._ensure_dmatrix(X)
+            preds = self.model.predict(dtest)
+        elif self.model_class is xgb.XGBClassifier:
+            preds = self.model.predict_proba(X)
+        else:
+            raise NotImplementedError(f"Prediction not implemented for model class {self.model_class}")
+
+        return preds
+
+    def train_to_disagree(self, x_train: np.ndarray, y_train: np.ndarray,
+                          x_validation: np.ndarray, y_validation: np.ndarray,
                           x_test: np.ndarray, y_test: np.ndarray, 
                           training_parameters: Optional[Dict[str, Any]], 
-                          balance_train_classes: bool, N: int) -> None:
+                          balance_train_classes: bool, n_samples: int) -> None:
         """
         Trains the model to disagree with another model using a specified dataset.
 
@@ -161,7 +188,7 @@ class XGBoostModel(ClassificationModel):
             y_test (np.ndarray): Labels for testing or disagreement evaluation.
             training_parameters (Optional[Dict[str, Any]]): Additional parameters for training the model.
             balance_train_classes (bool): Whether to balance the class distribution in the training data.
-            N (int): The number of examples in the testing set that should be used for calculating disagreement.
+            n_samples (int): The number of examples in the testing set that should be used for calculating disagreement.
 
         Raises:
             ValueError: If the necessary parameters for training are not properly initialized.
@@ -170,7 +197,7 @@ class XGBoostModel(ClassificationModel):
         if training_parameters:
             valid_param_sets = [valid_xgboost_params, valid_xgboost_custom_params]
             valid_training_params = self.validate_params(training_parameters, valid_param_sets)
-            if self.params is not None :
+            if self.params is not None:
                 self.params.update(valid_training_params)
             else:
                 self.params = valid_training_params
@@ -188,7 +215,7 @@ class XGBoostModel(ClassificationModel):
         # prepare the data for training
         data = np.concatenate([x_train, x_test])
         label = np.concatenate([y_train, 1 - y_test])
-        weight = np.concatenate([training_weights, 1 / (N + 1) * np.ones(N)])
+        weight = np.concatenate([training_weights, 1 / (n_samples + 1) * np.ones(n_samples)])
 
         if self.model_class is xgb.Booster:
             dtrain = self._ensure_dmatrix(data, label, weight)
@@ -201,52 +228,4 @@ class XGBoostModel(ClassificationModel):
             self.evaluate(x_validation, y_validation, eval_metrics=evaluation_metrics)
         else:
             raise NotImplementedError(f"Training not implemented for model class {self.model_class}")
-   
-    def evaluate(self, X: np.ndarray, y: np.ndarray, eval_metrics: Union[str, List[str]], print_results: bool = False) -> Dict[str, float]:
-        """
-        Evaluates the model using specified metrics.
-
-        Args:
-            X (np.ndarray): Features for evaluation.
-            y (np.ndarray): True labels for evaluation.
-            eval_metrics (List[str]): Metrics to use for evaluation.
-            print_results (bool, optional): Whether to print the evaluation results.
-
-        Returns:
-            Dict[str, float]: A dictionary with metric names and their evaluated scores.
-
-        Raises:
-            ValueError: If the model has not been trained before evaluation.
-        """
-        if self.model is None:
-            raise ValueError("Model must be trained before evaluation.")
-
-        # Ensure eval_metrics is a list
-        if isinstance(eval_metrics, str):
-            eval_metrics = [eval_metrics]
-
-        probs = self.predict(X, return_proba=True)
-        if probs.ndim == 1:
-            preds = (probs > 0.5).astype(int)
-        else:
-            preds = None
-
-        if preds is None:
-            raise ValueError("Only binary classification is supported for this version.")
-
-        evaluation_results = {}
-        for metric_name in eval_metrics:
-            translated_metric_name = xgboost_metrics.get(metric_name, metric_name)
-            metric_function = ClassificationEvaluationMetrics.get_metric(translated_metric_name)
-            if metric_function:
-                if metric_name in {'Auc', 'Auprc', 'Logloss'}:
-                    evaluation_results[metric_name] = metric_function(y, probs)
-                else:
-                    evaluation_results[metric_name] = metric_function(y, preds)
-            else:
-                print(f"Error: The metric '{metric_name}' is not supported.")
-
-        if print_results:
-            self.print_evaluation_results(results=evaluation_results)
-        return evaluation_results
     

@@ -1,5 +1,6 @@
 """
-The masked.py module includes the ``MaskedDataset`` class that is capable of handling many dataset related operations, such as cloning, sampling, refining...etc.
+The masked.py module includes the ``MaskedDataset`` class that is capable of handling many dataset related operations,
+such as cloning, sampling, refining, etc.
 """
 
 import numpy as np
@@ -92,12 +93,12 @@ class MaskedDataset(Dataset):
         """Resets the indices of the dataset to the original indices."""
         self.__indices = self.__original_indices.copy()
 
-    def sample_uniform(self, N: int, seed: int) -> 'MaskedDataset':
+    def sample_uniform(self, n_samples: int, seed: int) -> 'MaskedDataset':
         """
         Samples N data points from the dataset, prioritizing the least sampled points.
 
         Args:
-            N (int): The number of samples to return.
+            n_samples (int): The number of samples to return.
             seed (int): The seed for random number generator.
         
         Returns:
@@ -106,42 +107,33 @@ class MaskedDataset(Dataset):
         Raises:
             ValueError: If N is greater than the current number of data points in the dataset.
         """
-        if N > len(self.__observations):
+        if n_samples > len(self.__observations):
             raise ValueError("N cannot be greater than the current number of data points in the dataset.")
         
         # Find the indices of the least sampled points
         sorted_indices = np.argsort(self.__sample_counts)
-        least_sampled_indices = sorted_indices[:N]
+        least_sampled_indices = sorted_indices[:n_samples]
         
         # Set the seed for reproducibility and shuffle the least sampled indices
         np.random.seed(seed)
         np.random.shuffle(least_sampled_indices)
         
         # Select the first N after shuffling
-        sampled_indices = least_sampled_indices[:N]
+        sampled_indices = least_sampled_indices[:n_samples]
         # Update the sample counts for the sampled indices
         self.__sample_counts[sampled_indices] += 1
 
         # Extract the sampled observations and labels
-        sampled_obs = self.__observations[sampled_indices, :]
-        sampled_true_labels = self.__true_labels[sampled_indices]
-        sampled_pseudo_labels = self.__pseudo_labels[sampled_indices] if self.__pseudo_labels is not None else None
-        sampled_confidence_scores = self.__confidence_scores[sampled_indices] if self.__confidence_scores is not None else None
-        sampled_pseudo_probs = self.__pseudo_probabilities[sampled_indices] if self.__pseudo_probabilities is not None else None
+        sampled_set = self.__sample_indices(sampled_indices)
 
-        # Return a new MaskedDataset instance containing the sampled data
-        sampled_set = MaskedDataset(observations=sampled_obs, true_labels=sampled_true_labels, column_labels=self.__column_labels)
-        sampled_set.set_pseudo_probs_labels(sampled_pseudo_probs) if sampled_pseudo_probs is not None else None
-        sampled_set.set_pseudo_labels(sampled_pseudo_labels) if sampled_pseudo_labels is not None else None
-        sampled_set.set_confidence_scores(sampled_confidence_scores) if sampled_confidence_scores is not None else None
         return sampled_set
     
-    def sample_random(self, N: int, seed: int) -> 'MaskedDataset':
+    def sample_random(self, n_samples: int, seed: int) -> 'MaskedDataset':
         """
         Samples N data points randomly from the dataset using the given seed.
 
         Args:
-            N (int): The number of samples to return.
+            n_samples (int): The number of samples to return.
             seed (int): The seed for random number generator.
 
         Returns:
@@ -150,26 +142,44 @@ class MaskedDataset(Dataset):
         Raises:
             ValueError: If N is greater than the current number of data points in the dataset.
         """
-        if N > len(self.__observations):
+        if n_samples > len(self.__observations):
             raise ValueError("N cannot be greater than the current number of data points in the dataset.")
 
         # Set the seed for reproducibility and generate random indices
         rng = np.random.RandomState(seed)
-        random_indices = rng.permutation(len(self.__observations))[:N]
-        self.__sample_counts[random_indices] += 1
+        random_indices = rng.permutation(len(self.__observations))[:n_samples]
 
         # Extract the sampled observations and labels
-        sampled_obs = self.__observations[random_indices, :]
-        sampled_true_labels = self.__true_labels[random_indices]
-        sampled_pseudo_labels = self.__pseudo_labels[random_indices] if self.__pseudo_labels is not None else None
-        sampled_confidence_scores = self.__confidence_scores[random_indices] if self.__confidence_scores is not None else None
-        sampled_pseudo_probs = self.__pseudo_probabilities[random_indices] if self.__pseudo_probabilities is not None else None
+        sampled_set = self.__sample_indices(random_indices)
+
+        return sampled_set
+
+    def __sample_indices(self, indices: np.ndarray) -> 'MaskedDataset':
+        """
+        Samples data points from the dataset using the given indices.
+
+        Args:
+            indices (np.ndarray): The indices of samples to return.
+
+        Returns:
+            MaskedDataset: A new instance of the dataset containing samples corresponding to the given indices.
+        """
+        # Extract the sampled observations and labels
+        sampled_obs = self.__observations[indices, :]
+        sampled_true_labels = self.__true_labels[indices]
+        sampled_pseudo_labels = self.__pseudo_labels[indices] if self.__pseudo_labels is not None else None
+        sampled_confidence_scores = self.__confidence_scores[
+            indices] if self.__confidence_scores is not None else None
+        sampled_pseudo_probs = self.__pseudo_probabilities[
+            indices] if self.__pseudo_probabilities is not None else None
 
         # Return a new MaskedDataset instance containing the sampled data
-        sampled_set = MaskedDataset(observations=sampled_obs, true_labels=sampled_true_labels, column_labels=self.__column_labels)
+        sampled_set = MaskedDataset(observations=sampled_obs, true_labels=sampled_true_labels,
+                                    column_labels=self.__column_labels)
         sampled_set.set_pseudo_probs_labels(sampled_pseudo_probs) if sampled_pseudo_probs is not None else None
         sampled_set.set_pseudo_labels(sampled_pseudo_labels) if sampled_pseudo_labels is not None else None
         sampled_set.set_confidence_scores(sampled_confidence_scores) if sampled_confidence_scores is not None else None
+
         return sampled_set
     
     def get_observations(self) -> np.ndarray:
@@ -235,14 +245,14 @@ class MaskedDataset(Dataset):
         """
         return self.__file_path
     
-    def set_pseudo_probs_labels(self, pseudo_probabilities: np.ndarray, threshold=0.5) -> None:
+    def set_pseudo_probs_labels(self, pseudo_probabilities: np.ndarray, threshold: float = None) -> None:
         """
         Sets the pseudo probabilities and corresponding pseudo labels for the dataset. The labels are derived by
         applying a threshold to the probabilities.
 
         Args:
             pseudo_probabilities (np.ndarray): The pseudo probabilities array to be set.
-            threshold (float, optional): The threshold to convert probabilities to binary labels. Defaults to 0.5.
+            threshold (float): The threshold to convert probabilities to binary labels.
 
         Raises:
             ValueError: If the shape of pseudo_probabilities does not match the number of samples in the observations array.
@@ -251,7 +261,8 @@ class MaskedDataset(Dataset):
             raise ValueError("The shape of pseudo_probabilities must match the number of samples in the observations array.")
         
         self.__pseudo_probabilities = pseudo_probabilities
-        self.__pseudo_labels = pseudo_probabilities >= threshold
+        if threshold:
+            self.__pseudo_labels = pseudo_probabilities >= threshold
         
     def set_confidence_scores(self, confidence_scores: np.ndarray) -> None:
         """
@@ -371,36 +382,3 @@ class MaskedDataset(Dataset):
         """
         df = self.to_dataframe()
         df.to_csv(file_path, index=False)
-
-    def combine(self, other: 'MaskedDataset') -> 'MaskedDataset':
-        """
-        Combines the current MaskedDataset with another MaskedDataset.
-
-        Args:
-            other (MaskedDataset): The other MaskedDataset to combine with.
-        
-        Returns:
-            MaskedDataset: A new instance of MaskedDataset containing the combined data.
-
-        Raises:
-            ValueError: If the column labels of the two datasets do not match.
-        """
-        if self.__column_labels != other.__column_labels:
-            raise ValueError("The column labels of the two datasets must match to combine them.")
-
-        combined_observations = np.vstack((self.__observations, other.__observations))
-        combined_true_labels = np.concatenate((self.__true_labels, other.__true_labels))
-        combined_pseudo_labels = np.concatenate((self.__pseudo_labels, other.__pseudo_labels)) if self.__pseudo_labels is not None and other.__pseudo_labels is not None else None
-        combined_pseudo_probabilities = np.concatenate((self.__pseudo_probabilities, other.__pseudo_probabilities)) if self.__pseudo_probabilities is not None and other.__pseudo_probabilities is not None else None
-        combined_confidence_scores = np.concatenate((self.__confidence_scores, other.__confidence_scores)) if self.__confidence_scores is not None and other.__confidence_scores is not None else None
-
-        combined_dataset = MaskedDataset(
-            observations=combined_observations,
-            true_labels=combined_true_labels,
-            column_labels=self.__column_labels
-        )
-        combined_dataset.set_pseudo_labels(combined_pseudo_labels) if combined_pseudo_labels is not None else None
-        combined_dataset.set_pseudo_probs_labels(combined_pseudo_probabilities) if combined_pseudo_probabilities is not None else None
-        combined_dataset.set_confidence_scores(combined_confidence_scores) if combined_confidence_scores is not None else None
-
-        return combined_dataset

@@ -4,7 +4,7 @@ models subpackage
 Overview
 ----------
 The ``models`` subpackage serves as a comprehensive backbone for managing and utilizing machine learning models across various aspects of the package. It is meticulously designed to support the development, evaluation, and optimization of models,
-ensuring compatibility and efficiency in integrating with ``med3pa`` and ``Detectron`` methodologies. 
+ensuring compatibility and efficiency in integrating with ``med3pa`` methodology.
 This subpackage leverages several design patterns, such as **Factory, Singleton, and Prototype,** to ensure robustness, modularity, and scalability. 
 Through its structured approach, This subpackage offers a robust framework that includes abstract base classes for uniformity in model operations, concrete implementations for specialized algorithms,
 and utility tools for precise model evaluation and data handling.

@@ -1,5 +1,5 @@
 """
-This module is crucial for data handling, utilizing the **Strategy design pattern** and therefor offering multiple strategies to transform raw data into formats that enhance model training and evaluation.
+This module is crucial for data handling, utilizing the **Strategy design pattern** and therefore offering multiple strategies to transform raw data into formats that enhance model training and evaluation.
 According to the model type.
 """
 
@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import xgboost as xgb
+from typing import Optional
+
 
 class DataPreparingStrategy:
     """
@@ -14,7 +16,8 @@ class DataPreparingStrategy:
     """
 
     @staticmethod
-    def execute(observations, labels=None, weights=None):
+    def execute(observations: np.ndarray, labels: Optional[np.ndarray] = None, weights: Optional[np.ndarray] = None
+                ) -> tuple:
         """
         Prepares data for model training or prediction.
 
@@ -38,7 +41,8 @@ class ToDmatrixStrategy(DataPreparingStrategy):
     """
 
     @staticmethod
-    def is_supported_data(observations, labels=None, weights=None) -> bool:
+    def is_supported_data(observations: np.ndarray, labels: Optional[np.ndarray] = None,
+                          weights: Optional[np.ndarray] = None) -> bool:
         """
         Checks if the data types of observations, labels, and weights are supported for conversion to DMatrix.
 
@@ -56,7 +60,8 @@ class ToDmatrixStrategy(DataPreparingStrategy):
         return all(is_supported(data) for data in [observations, labels, weights] if data is not None)
 
     @staticmethod
-    def execute(observations, labels=None, weights=None) -> xgb.DMatrix:
+    def execute(observations: np.ndarray, labels: Optional[np.ndarray] = None,
+                weights: Optional[np.ndarray] = None) -> xgb.DMatrix:
         """
         Converts observations, labels, and weights into an XGBoost DMatrix.
 
@@ -82,7 +87,8 @@ class ToNumpyStrategy(DataPreparingStrategy):
     """
 
     @staticmethod
-    def execute(observations, labels=None, weights=None) -> tuple:
+    def execute(observations: np.ndarray, labels: Optional[np.ndarray] = None,
+                weights: Optional[np.ndarray] = None) -> tuple:
         """
         Converts observations, labels, and weights into NumPy arrays.
 
@@ -115,7 +121,8 @@ class ToDataframesStrategy(DataPreparingStrategy):
     """
 
     @staticmethod
-    def execute(column_labels: list, observations: np.ndarray, labels: np.ndarray = None, weights: np.ndarray = None) -> tuple:
+    def execute(column_labels: list, observations: np.ndarray, labels: np.ndarray = None,
+                weights: np.ndarray = None) -> tuple:
         """
         Converts observations, labels, and weights into pandas DataFrames with specified column labels.
 

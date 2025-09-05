@@ -2,10 +2,9 @@
 The ``regression_metrics.py`` module defines the ``RegressionEvaluationMetrics`` class, 
 that contains various regression metrics that can be used to assess the model's performance. 
 """
-from typing import List
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-
+from typing import Callable, List
 
 from .abstract_metrics import EvaluationMetric
 
@@ -84,7 +83,7 @@ class RegressionEvaluationMetrics(EvaluationMetric):
         return r2_score(y_true, y_pred, sample_weight=sample_weight)
     
     @classmethod
-    def get_metric(cls, metric_name: str):
+    def get_metric(cls, metric_name: str = '') -> Callable | List[str]:
         """
         Get the metric function based on the metric name.
 
@@ -93,6 +92,7 @@ class RegressionEvaluationMetrics(EvaluationMetric):
 
         Returns:
             function: The function corresponding to the metric.
+            List: List of available metric names.
         """
         metrics_mappings = {
             'MSE': cls.mean_squared_error,
@@ -101,7 +101,7 @@ class RegressionEvaluationMetrics(EvaluationMetric):
             'R2': cls.r2_score
         }
         if metric_name == '':
-            return list(metrics_mappings.keys())
+            return list(metrics_mappings)
         else:
             metric_function = metrics_mappings.get(metric_name)
             return metric_function
@@ -115,5 +115,3 @@ class RegressionEvaluationMetrics(EvaluationMetric):
             list: A list of supported classification metrics.
         """
         return cls.get_metric()
-
-

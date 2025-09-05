@@ -25,7 +25,7 @@ By doing so, it aids in the proactive identification and mitigation of potential
 
 Extensibility for Integration:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Our package is meticulously designed to facilitate and accommodate **integration** with other methods, such as ``Detectron``. 
+Our package is meticulously designed to facilitate and accommodate **integration** with other methods.
 This extensibility allows ``med3pa`` to assess shifts in data distributions, **especially focusing on the problematic profiles identified through MPC**. 
 Such integration enhances the comprehensive assessment of how external changes or shifts might affect model reliability over time, 
 ensuring that the model remains robust and accurate in dynamic clinical environments.

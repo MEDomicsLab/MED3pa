@@ -8,9 +8,8 @@ import json
 import pickle
 import re
 import warnings
-from typing import Union
-
 import xgboost as xgb
+from typing import Union
 
 from .abstract_models import Model
 from .concrete_classifiers import XGBoostModel
@@ -58,7 +57,7 @@ class ModelFactory:
         Returns:
             list: A list containing the keys from model_mapping which represent the supported model types.
         """
-        return list(ModelFactory.model_mapping.keys())
+        return list(ModelFactory.model_mapping)
         
     @staticmethod
     def create_model_with_hyperparams(model_type: str, hyperparams: dict) -> Model:

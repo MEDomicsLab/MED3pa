@@ -3,7 +3,7 @@ The ``abstract_metrics.py`` module defines the ``EvaluationMetric`` abstract bas
 providing a standard interface for calculating metric values for model evaluations. 
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class EvaluationMetric(ABC):
@@ -13,6 +13,7 @@ class EvaluationMetric(ABC):
     """
 
     @classmethod
+    @abstractmethod
     def get_metric(cls, metric_name: str):
         """
         Get the metric function based on the metric name.
@@ -26,6 +27,7 @@ class EvaluationMetric(ABC):
         pass
 
     @classmethod
+    @abstractmethod
     def supported_metrics(cls) -> list:
         """
         Get a list of supported regression metrics.
