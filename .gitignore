@@ -32,3 +32,6 @@ experiments/
 
 *.MED3paResults
 *.csv
+
+# Ignore Docs build
+docs/_build/
