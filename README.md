@@ -15,7 +15,7 @@
 
 ## Overview
 
-<img src="https://github.com/MEDomics-UdeS/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
+<img src="https://github.com/MEDomicsLab/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
 
 The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, particularly focusing on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of **covariate shifts**, **uncertainty**, and **problematic data profiles**.
 
@@ -28,7 +28,7 @@ The **MED3pa** package is specifically designed to address critical challenges i
 ## Subpackages
 
 <p align="center">
-    <img src="https://github.com/MEDomics-UdeS/MED3pa/blob/review/docs/diagrams/subpackages.svg" alt="Overview">
+    <img src="https://github.com/MEDomicsLab/MED3pa/blob/review/docs/diagrams/subpackages.svg" alt="Overview">
 </p>
 
 The package is structured into four distinct subpackages:
@@ -50,8 +50,8 @@ pip install MED3pa
 ```
 
 ### A simple exemple
-We have created a [simple example](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples) of using the MED3pa package. 
-[See the full example here](https://github.com/MEDomics-UdeS/MED3pa/tree/main/examples/oym_example.ipynb)
+We have created a [simple example](https://github.com/MEDomicsLab/MED3pa/tree/main/examples) of using the MED3pa package. 
+[See the full example here](https://github.com/MEDomicsLab/MED3pa/tree/main/examples/oym_example.ipynb)
 ```python
 from MED3pa.datasets import DatasetsManager
 from MED3pa.med3pa import Med3paExperiment
@@ -91,8 +91,8 @@ MED3pa is an open-source package developed at the [MEDomicsLab](https://www.medo
 
 ## Authors
 * [Olivier Lefebvre: ](https://www.linkedin.com/in/olivier-lefebvre-bb8837162/) Student (Ph. D. Computer science) at Université de Sherbrooke
-* [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomics-Udes laboratory.
-* [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomics-Udes laboratory.
+* [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomicsLab laboratory.
+* [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomicsLab laboratory.
 * [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Associate professor, Department of Oncology at McGill University
 
 ## Statement
@@ -117,7 +117,7 @@ Here's what the license entails:
 9. The software author or license can not be held liable for any damages inflicted by the software.
 ```
 
-More information about the [LICENSE can be found here](https://github.com/MEDomics-UdeS/MEDimage/blob/main/LICENSE.md)
+More information about the [LICENSE can be found here](https://github.com/MEDomicsLab/MEDimage/blob/main/LICENSE.md)
 
 ## Supported Python Versions
 
