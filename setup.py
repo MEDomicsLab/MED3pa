@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="MED3pa",
-    version="1.0.0b1",
+    version="1.0.0b2",
     author="MEDomics consortium",
     author_email="medomics.info@gmail.com",
     description="Python Open-source package for ensuring robust and reliable ML models deployments",
@@ -21,6 +21,9 @@ setup(
         'Github': 'https://github.com/MEDomicsLab/MED3pa'
     },
     packages=find_packages(exclude=['docs', 'tests', 'experiments']),
+    package_data={
+            "MED3pa": ["MED3pa/visualization/tree_template/*"]
+        },
     python_requires='>=3.9',
     install_requires=requirements,
 )
