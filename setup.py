@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="MED3pa",
-    version="1.0.0b0",
+    version="1.0.0b1",
     author="MEDomics consortium",
     author_email="medomics.info@gmail.com",
     description="Python Open-source package for ensuring robust and reliable ML models deployments",
