@@ -292,7 +292,8 @@ class ClassificationEvaluationMetrics(EvaluationMetric):
             'Auc': cls.roc_auc,
             'LogLoss': cls.log_loss,
             'Auprc': cls.average_precision,
-            'MCC': cls.matthews_corrcoef
+            'MCC': cls.matthews_corrcoef,
+            'Recall': cls.recall
         }
         if metric_name == '':
             return list(metrics_mappings)

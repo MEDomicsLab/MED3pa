@@ -79,8 +79,7 @@ class Med3paExperiment:
             Med3paResults: the results of the MED3PA experiment on the reference set and testing set.
         """
         if med3pa_metrics is None:
-            med3pa_metrics = ['Accuracy', 'BalancedAccuracy', 'Precision', 'Recall', 'F1Score',
-                              'Specificity', 'Sensitivity', 'Auc', 'LogLoss', 'Auprc', 'NPV', 'PPV', 'MCC']
+            med3pa_metrics = ClassificationEvaluationMetrics.supported_metrics()
 
         if models_metrics is None:
             models_metrics = ['MSE', 'RMSE', 'MAE']
