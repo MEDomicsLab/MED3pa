@@ -18,7 +18,8 @@ setup(
     url="https://github.com/MEDomicsLab/MED3pa",
     project_urls={
         'Documentation': 'https://med3pa.readthedocs.io/en/latest/',
-        'Github': 'https://github.com/MEDomicsLab/MED3pa'
+        'Github': 'https://github.com/MEDomicsLab/MED3pa',
+        'Article': 'https://doi.org/10.1101/2025.08.22.25334254'
     },
     packages=find_packages(exclude=['docs', 'tests', 'experiments']),
 include_package_data=True,
