@@ -17,13 +17,14 @@
 
 <img src="https://github.com/MEDomicsLab/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
 
-The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, particularly focusing on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of **covariate shifts**, **uncertainty**, and **problematic data profiles**.
+The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, with a particular focus on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of prediction uncertainty and disadvantaged data profiles associated with degraded model performance.
+This work is developed alongside the associated methodological article, available as a preprint on medRxiv: https://doi.org/10.1101/2025.08.22.25334254.
 
 ## Key Functionalities
 
 - ** Model Confidence Estimation**: Through the MED3pa subpackage, the package measures the predictive confidence at both individual and group (profile) levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
-- **Identification of Problematic Profiles**: MED3pa analyzes data profiles for whom the BaseModel consistently leads to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
+- **Identification of disadvantaged Profiles**: MED3pa analyzes data profiles for whom the BaseModel consistently leads to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
 
 ## Subpackages
 
@@ -35,7 +36,7 @@ The package is structured into four distinct subpackages:
 
 - **datasets**: Stores and manages the dataset.
 - **models**: Handles ML models operations.
-- **med3pa**: Evaluates the model’s performance & extracts problematic profiles.
+- **med3pa**: Evaluates the model’s performance & extracts disadvantaged profiles.
 
 This modularity allows users to easily integrate and utilize specific functionalities tailored to their needs without dealing with unnecessary complexities.
 
@@ -94,30 +95,6 @@ MED3pa is an open-source package developed at the [MEDomicsLab](https://www.medo
 * [Lyna Chikouche: ](https://www.linkedin.com/in/lynahiba-chikouche-62a5181bb/) Research intern at MEDomicsLab laboratory.
 * [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomicsLab laboratory.
 * [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Associate professor, Department of Oncology at McGill University
-
-## Statement
-
-This package is part of https://www.medomics.ai/, a package providing research utility tools for developing precision medicine applications.
-
-```
-Copyright (C) 2024 MEDomics consortium
-
-GPLV3 LICENSE SYNOPSIS
-
-Here's what the license entails:
-
-1. Anyone can copy, modify and distribute this software.
-2. You have to include the license and copyright notice with each and every distribution.
-3. You can use this software privately.
-4. You can use this software for commercial purposes.
-5. If you dare build your business solely from this code, you risk open-sourcing the whole code base.
-6. If you modify it, you have to indicate changes made to the code.
-7. Any modifications of this code base MUST be distributed with the same license, GPLv3.
-8. This software is provided without warranty.
-9. The software author or license can not be held liable for any damages inflicted by the software.
-```
-
-More information about the [LICENSE can be found here](https://github.com/MEDomicsLab/MEDimage/blob/main/LICENSE.md)
 
 ## Supported Python Versions
 
