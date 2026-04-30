@@ -18,7 +18,7 @@
 <img src="https://github.com/MEDomicsLab/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
 
 The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, with a particular focus on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of prediction uncertainty and disadvantaged data profiles associated with degraded model performance.
-This work is developed alongside the associated methodological article, available as a preprint on medRxiv: https://doi.org/10.1101/2025.08.22.25334254
+This work is developed alongside the associated methodological article, published in the Journal of the American Medical Informatics Association (JAMIA): https://doi.org/10.1093/jamia/ocag034
 
 ## Key Functionalities
 
