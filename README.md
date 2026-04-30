@@ -18,7 +18,8 @@
 <img src="https://github.com/MEDomicsLab/MED3pa/blob/review/docs/diagrams/package_white_bg.svg" alt="Overview" style="width:100%;">
 
 The **MED3pa** package is specifically designed to address critical challenges in deploying machine learning models, with a particular focus on the robustness and reliability of models under real-world conditions. It provides comprehensive tools for evaluating model stability and performance in the face of prediction uncertainty and disadvantaged data profiles associated with degraded model performance.
-This work is developed alongside the associated methodological article, published in the Journal of the American Medical Informatics Association (JAMIA): https://doi.org/10.1093/jamia/ocag034
+This work is developed alongside the associated methodological article, published in the Journal of the American Medical Informatics Association (JAMIA): https://doi.org/10.1093/jamia/ocag034.
+The full code used to generate the results presented in the article is available here: https://github.com/MEDomicsLab/study_3pa.
 
 ## Key Functionalities
 
@@ -96,29 +97,6 @@ MED3pa is an open-source package developed at the [MEDomicsLab](https://www.medo
 * [Ludmila Amriou: ](https://www.linkedin.com/in/ludmila-amriou-875b58238//) Research intern at MEDomicsLab laboratory.
 * [Martin Vallières: ](https://www.linkedin.com/in/martvallieres/) Associate professor, Department of Oncology at McGill University
 
-## Statement
-
-This package is part of https://www.medomics.ai/, a package providing research utility tools for developing precision medicine applications.
-
-```
-Copyright (C) 2024 MEDomics consortium
-
-GPLV3 LICENSE SYNOPSIS
-
-Here's what the license entails:
-
-1. Anyone can copy, modify and distribute this software.
-2. You have to include the license and copyright notice with each and every distribution.
-3. You can use this software privately.
-4. You can use this software for commercial purposes.
-5. If you dare build your business solely from this code, you risk open-sourcing the whole code base.
-6. If you modify it, you have to indicate changes made to the code.
-7. Any modifications of this code base MUST be distributed with the same license, GPLv3.
-8. This software is provided without warranty.
-9. The software author or license can not be held liable for any damages inflicted by the software.
-```
-
-More information about the [LICENSE can be found here](https://github.com/MEDomicsLab/MEDimage/blob/main/LICENSE.md)
 
 ## Supported Python Versions
 
