@@ -20,14 +20,14 @@ Overview
 Use and Application of the package
 -----------------------------------
 The ``MED3pa`` package is specifically designed to address critical challenges in deploying machine learning models, particularly focusing on the robustness and reliability of models under real-world conditions. 
-It provides comprehensive tools for evaluating model stability and performance in the face of **covariate shifts, and problematic data profiles.**
+It provides comprehensive tools for evaluating model stability and performance in the face of prediction uncertainty and disadvantaged data profiles associated with degraded model performance. This work is developed alongside the associated methodological article, published in the Journal of the American Medical Informatics Association (JAMIA): https://doi.org/10.1093/jamia/ocag034
 
 Key functionalities
 -------------------
 
 - **Uncertainty and Confidence Estimation:** Through the med3pa subpackage, the package measures the uncertainty and predictive confidence at both individual and group levels. This helps in understanding the reliability of model predictions and in making informed decisions based on model outputs.
 
-- **Identification of Problematic Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
+- **Identification of disadvantaged Profiles**: MED3pa analyzes data profiles that consistently lead to poor model performance. This capability allows developers to refine training datasets or retrain models to handle these edge cases effectively.
 
 Software Engineering Principles
 -------------------------------
